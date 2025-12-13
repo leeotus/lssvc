@@ -7,7 +7,8 @@
 #include <mutex>
 #include <unordered_set>
 
-#define gLSSTaskMgr lssvc::utils::LSSSingleton<lssvc::utils::LSSTaskMgr>::getInstance()
+// @brief global LSSTaskMgr object
+#define g_task_mgr lssvc::utils::LSSSingleton<lssvc::utils::LSSTaskMgr>::getInstance()
 
 namespace lssvc::utils {
 
