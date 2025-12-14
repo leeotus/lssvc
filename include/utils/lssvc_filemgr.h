@@ -11,7 +11,7 @@
 #include <unordered_map>
 
 // @brief global LSSFileMgr object
-#define g_file_mgr lssvc::utils::LSSSingleton<lssvc::utils>::getInstance()
+#define g_file_mgr lssvc::utils::LSSSingleton<lssvc::utils::LSSFileMgr>::getInstance()
 
 namespace lssvc::utils {
 
@@ -22,6 +22,12 @@ public:
 
   // @brief update time data & maybe do the rotations
   void update();
+
+  // @brief get the file logger searching by the input filename
+  LSSFileLogPtr getFileLog(const std::string &filename);
+
+  // @brief remove the log file
+  void removeFileLog(const LSSFileLogPtr &log);
 
   void rotateDays(const LSSFileLogPtr &file);
   void rotateHours(const LSSFileLogPtr &file);

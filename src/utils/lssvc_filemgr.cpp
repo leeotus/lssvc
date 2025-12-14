@@ -5,6 +5,10 @@
 
 #include <sstream>
 
+namespace {
+static lssvc::utils::LSSFileLogPtr file_log_nullptr; // as a nullptr
+}
+
 using namespace lssvc::utils;
 
 void LSSFileMgr::rotateDays(const LSSFileLogPtr &file) {
@@ -110,4 +114,25 @@ void lssvc::utils::LSSFileMgr::update() {
   last_year_ = year;
   last_month_ = month;
   last_minute_ = minute;
+}
+
+LSSFileLogPtr LSSFileMgr::getFileLog(const std::string &filename) {
+  std::lock_guard<std::mutex> lock(lock_);
+  if (logs_.find(filename) != logs_.end()) {
+    return logs_[filename];
+  }
+
+  // else, create it
+  LSSFileLogPtr log = std::make_shared<LSSFileLog>();
+  if (!log->open(filename)) {
+    return file_log_nullptr;
+  }
+
+  logs_.emplace(filename, log);
+  return log;
+}
+
+void LSSFileMgr::removeFileLog(const LSSFileLogPtr &log) {
+  std::lock_guard<std::mutex> lock(lock_);
+  logs_.erase(log->filePath());
 }

@@ -1,0 +1,12 @@
+{
+  "name": "lssvc",
+  "cpu_start": 0,
+  "threads": 4,
+  "log":
+  {
+    "level": "DEBUG",
+    "name": "lssvc.log",
+    "path": "./log/",
+    "rotate": "HOUR"
+  }
+}

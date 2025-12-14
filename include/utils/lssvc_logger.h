@@ -4,6 +4,8 @@
 #include "noncopyable.h"
 #include <string>
 
+#define g_lsslogger lssvc::utils::LSSSingleton<lssvc::utils::LSSLogger>::getInstance()
+
 namespace lssvc::utils{
 
 enum LogLevel {
