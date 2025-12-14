@@ -12,6 +12,8 @@ int main(int argc, char **argv) {
   }
   LogInfoPtr log_info = g_config_mgr->getLogInfo();
   std::cout << "log level:" << log_info->level << " path:" << log_info->path
-            << " name:" << log_info->name << std::endl;
+            << " name:" << log_info->name << " rotate:"
+            << ((log_info->rotate_type == kRotateHour) ? "Hour" : "Others")
+            << std::endl;
   return 0;
 }

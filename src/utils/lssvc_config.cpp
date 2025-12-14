@@ -45,6 +45,7 @@ LogInfoPtr &LSSConfigMgr::LSSConfig::getLogInfo() { return log_info_; }
 bool LSSConfigMgr::LSSConfig::parseLogInfo(const Json::Value &root) {
   log_info_ = std::make_shared<LogInfo>();
 
+  // @todo lowercase before the following process
   Json::Value levelObj = root["level"]; // log level
   if (!levelObj.isNull()) {
     std::string level = levelObj.asString();
