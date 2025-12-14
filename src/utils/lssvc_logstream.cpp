@@ -8,8 +8,6 @@
 
 using namespace lssvc::utils;
 
-LSSLogger *g_lsslogger = nullptr;
-
 static thread_local pid_t thread_id = 0;
 const char *log_string[] = {" TRACE ", " DEBUG ", " INFO ", " WARN ",
                             " ERROR "};
