@@ -15,7 +15,7 @@ constexpr int kEventRead = (EPOLLIN | EPOLLPRI | EPOLLET);  // use ET
 constexpr int kEventWrite = (EPOLLOUT | EPOLLET);
 
 class LSSEvent : public std::enable_shared_from_this<LSSEvent> {
-  friend class LSSEventLoop;  // todo
+  friend class LSSEventLoop;
 public:
   LSSEvent();
 
