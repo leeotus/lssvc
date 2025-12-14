@@ -1,6 +1,7 @@
 #ifndef __LSSVC_NET_LOGGER_H__
 
 #include "utils/lssvc_logstream.h"
+#include "utils/lssvc_singleton.h"
 
 #define NETWORK_TRACE   LSSVC_LOG_TRACE
 #define NETWORK_DEBUG   LSSVC_LOG_DEBUG
