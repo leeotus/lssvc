@@ -43,3 +43,5 @@ void LSSEventLoopThread::start() {
   loop.loop();
   loop_ = nullptr;
 }
+
+std::thread &lssvc::network::LSSEventLoopThread::getThread() { return thread_; }

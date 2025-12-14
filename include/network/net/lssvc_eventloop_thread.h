@@ -22,7 +22,9 @@ public:
 
   void run();
 
-  LSSEventLoop *loop() const; // getter
+  // getter
+  LSSEventLoop *loop() const;
+  std::thread &getThread();
 
 private:
   /**
