@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(LSSVC_INCLUDE_PATH "include")
 set(LSSVC_SOURCE_PATH "src")
+set(LSSVC_3RDPARTY_PATH "third_party")
 
 if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.2.9)
     message(STATUS "GCC Version > 7.3.0, USING -Wno-error=unused-result -Werror=return-type")
@@ -12,14 +13,18 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.2.9)
 endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -pipe -Wall -Werror -Wno-unused-variable -lrt -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -pipe -Wno-unused-variable -lrt -pthread")
 elseif (NOT CMAKE_BUILD_TYPE STREQUAL Debug)
     message(STATUS "Release Version.")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -pipe -Wall -Werror -Wno-unused-variable -lrt -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -pipe -Wno-unused-variable -lrt -pthread")
 endif ()
 
 include_directories("${LSSVC_INCLUDE_PATH}")
+include_directories("${LSSVC_3RDPARTY_PATH}/jsoncpp/include")
+# link_directories(${CMAKE_BINARY_DIR}/third_party/jsoncpp/src/lib_json)
+
 add_subdirectory("${LSSVC_SOURCE_PATH}")
+add_subdirectory("${LSSVC_3RDPARTY_PATH}/jsoncpp")
 
 option(TEST_ENABLE "also build the testcases" ON)
 if(${TEST_ENABLE})
