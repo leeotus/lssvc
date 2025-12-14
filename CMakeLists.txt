@@ -21,7 +21,7 @@ endif ()
 
 include_directories("${LSSVC_INCLUDE_PATH}")
 include_directories("${LSSVC_3RDPARTY_PATH}/jsoncpp/include")
-# link_directories(${CMAKE_BINARY_DIR}/third_party/jsoncpp/src/lib_json)
+link_directories(${CMAKE_BINARY_DIR}/third_party/jsoncpp/src/lib_json)
 
 add_subdirectory("${LSSVC_SOURCE_PATH}")
 add_subdirectory("${LSSVC_3RDPARTY_PATH}/jsoncpp")

@@ -8,6 +8,9 @@ add_library(
   ${UTILS_SOURCES}
 )
 
+# target_link_directories(utils PRIVATE ${CMAKE_BINARY_DIR}/third_party/jsoncpp/src/lib_json)
+target_link_libraries(utils PRIVATE jsoncpp)
+
 add_library(
   lssvc::utils ALIAS utils
 )
