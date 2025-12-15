@@ -1,7 +1,7 @@
 include_directories(${LSSVC_INCLUDE_PATH}/utils)
 
-add_executable("test_lssvctime" lssvc_time_test.cpp)
-add_executable("test_singleton" lssvc_singleton_test.cpp)
+add_executable("test_lssvctime" test_lssvc_time.cpp)
+add_executable("test_singleton" test_lssvc_singleton.cpp)
 add_executable("test_lssvc_config" test_lssvc_config.cpp)
 
 target_link_libraries(
