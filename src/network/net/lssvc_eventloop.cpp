@@ -1,6 +1,8 @@
 #include "network/net/lssvc_eventloop.h"
 #include "network/base/lssvc_netlogger.h"
 #include "network/net/lssvc_event.h"
+#include "utils/lssvc_logstream.h"
+#include "utils/lssvc_logger.h"
 #include <fcntl.h>
 #include <string.h>
 #include <sys/socket.h>
