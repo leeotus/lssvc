@@ -27,7 +27,7 @@ add_subdirectory("${LSSVC_3RDPARTY_PATH}/jsoncpp")  # compile jsoncpp first
 
 add_subdirectory("${LSSVC_SOURCE_PATH}")
 
-option(TEST_ENABLE "also build the testcases" ON)
+option(TEST_ENABLE "also build the testcases" OFF)
 if(${TEST_ENABLE})
   add_subdirectory(test)
 endif()
