@@ -2,6 +2,7 @@
 #define __LSSVC_LOG_STREAM_H__
 
 #include "lssvc_logger.h"
+#include "lssvc_singleton.h"
 #include <sstream>
 #include <iostream>
 
