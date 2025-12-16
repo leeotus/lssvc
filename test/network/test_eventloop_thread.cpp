@@ -21,7 +21,11 @@ int main(int argc, char **argv) {
   LSSEventLoopThreadPool pool(2, 0, 2);
   pool.start(); // begin to work
   cout << "thread id:" << std::this_thread::get_id() << "\r\n"; // get the thread id
-  // vector<LSSEventLoop*> loops = pool.getLoops();
-  // @todo
+  vector<LSSEventLoop*> loops = pool.getLoops();
+  for(auto &e : loops) {
+    e->enqueueTask([&e]() {
+      std::cout << "loop:" << e << ", thread id:" << std::this_thread::get_id() << "\r\n";
+    });
+  }
   return 0;
 }
