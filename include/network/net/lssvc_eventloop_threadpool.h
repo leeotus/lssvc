@@ -21,6 +21,7 @@ public:
 
   std::vector<LSSEventLoop *> getLoops() const;
 
+  // @note round-robin load balancing
   LSSEventLoop *getNextLoop();
 
   size_t size(); // number of total threads

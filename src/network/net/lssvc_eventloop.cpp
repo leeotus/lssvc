@@ -11,16 +11,25 @@
 
 using namespace lssvc::network;
 
-static thread_local LSSEventLoop *g_local_eventloop = nullptr;
+// @brief use this variable to store EventLoop* object in a thread
+// @note the number of 't_local_eventloop' equals to the number of runing threads
+// using this 'thread_local' variable, we can judge whether a EventLoop object belongs to a
+// thread or not (in order to avoid cross-thread execution)
+static thread_local LSSEventLoop *t_local_eventloop = nullptr;
 
 LSSEventLoop::LSSEventLoop() : epoll_fd_(-1) {
-  epoll_fd_ = ::epoll_create(1024);
+  epoll_fd_ = ::epoll_create1(0);
   if (epoll_fd_ == -1) {
     NETWORK_ERROR << "Failed to initialize EventLoop!\r\n";
     exit(-1);
   }
   epoll_events_.reserve(LSS_EPOLLEVENTS_MAXSIZE);
-  g_local_eventloop = this;
+  epoll_events_.clear();
+  if(t_local_eventloop != nullptr) {
+    NETWORK_ERROR << "there already had an eventloop.\r\n";
+    exit(-1);
+  }
+  t_local_eventloop = this;
 }
 
 LSSEventLoop::~LSSEventLoop() { quit(); }
@@ -128,10 +137,70 @@ void LSSEventLoop::loop(int timeout) {
           event->onWrite();
         }
       }
-    } else if(nready == 0) {
-      // @todo
+
+      if(nready >= epoll_events_.size() - LSS_EPOLLEVENTS_RESIZE_DELTA) {
+        epoll_events_.resize(epoll_events_.size() * LSS_EPOLLEVENTS_GROWFACTOR);
+      }
+
+      runTask();
+
     } else if(nready < 0) {
       NETWORK_ERROR << "epoll wait meets an error: " << errno << "\r\n";
     }
+  }
+}
+
+void LSSEventLoop::enqueueTask(const std::function<void()> &f) {
+  if(isInLoopThread()) {
+    f();
+  } else {
+    std::lock_guard<std::mutex> lock(lock_);
+    tasks_.push(f);
+
+    wakeUp();
+  }
+}
+
+void LSSEventLoop::enqueueTask(const std::function<void()> &&f) {
+  if(isInLoopThread()) {
+    f();
+  } else {
+    std::lock_guard<std::mutex> lock(lock_);
+    tasks_.push(std::move(f));
+
+    wakeUp();
+  }
+}
+
+void LSSEventLoop::checkInLoopThread() {
+  if(!isInLoopThread()) {
+    NETWORK_ERROR << "It is forbidden to run loop on other thread.\r\n";
+    exit(-1);
+  }
+}
+
+bool LSSEventLoop::isInLoopThread() const {
+  return this == t_local_eventloop;
+}
+
+void LSSEventLoop::initPipe() {
+  if(pipe_ == nullptr) {
+    pipe_ = std::make_shared<LSSPipeEvent>(this);
+    this->addEvent(pipe_);
+  }
+}
+
+void LSSEventLoop::wakeUp() {
+  initPipe();
+  int64_t tmp = 1;
+  pipe_->write((const char *)&tmp, sizeof(tmp));
+}
+
+void LSSEventLoop::runTask() {
+  std::lock_guard<std::mutex> lock(lock_);
+  while(!tasks_.empty()) {
+    auto &f = tasks_.front();
+    f();
+    tasks_.pop();
   }
 }
