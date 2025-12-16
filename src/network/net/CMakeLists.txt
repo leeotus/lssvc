@@ -12,6 +12,8 @@ add_library(
   ${NETWORK_SOURCES}
 )
 
+target_link_libraries(${PROJECT_NAME}-net PRIVATE lssvc::utils)
+
 add_library(
   lssvc::net ALIAS ${PROJECT_NAME}-net
 )
