@@ -6,8 +6,6 @@
 
 namespace lssvc::network {
 
-using LSSPipeEventPtr = std::shared_ptr<LSSPipeEvent>;
-
 class LSSEventLoop;
 class LSSPipeEvent : public LSSEvent {
 public:
@@ -33,6 +31,8 @@ public:
 private:
   int write_fd_{-1};
 };
+
+using LSSPipeEventPtr = std::shared_ptr<LSSPipeEvent>;
 
 }   // namespace lssvc::network
 

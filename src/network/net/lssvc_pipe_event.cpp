@@ -47,5 +47,5 @@ void LSSPipeEvent::onError(const std::string &msg) {
 }
 
 void LSSPipeEvent::write(const char *data, size_t len) {
-
+  ::write(write_fd_, data, len);
 }

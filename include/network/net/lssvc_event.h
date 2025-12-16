@@ -19,6 +19,8 @@ class LSSEvent : public std::enable_shared_from_this<LSSEvent> {
 public:
   LSSEvent();
 
+  LSSEvent(LSSEventLoop *loop);
+
   /**
    * @brief when the server accept a client, we get the fd of a client in this 'EventLoop',
    * then package this client(with its fd) into a Event object
@@ -37,7 +39,7 @@ public:
 
   int getFd() const;
 
-private:
+protected:
   LSSEventLoop *loop_;   // the corresponding loop(server) holding this event(client)
   int fd_;    // file description for epoll
   int event_;
