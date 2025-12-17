@@ -3,6 +3,7 @@
 
 #include "lssvc_event.h"
 #include "lssvc_pipe_event.h"
+#include "lssvc_timing_wheel.h"
 
 #include <string>
 #include <sys/epoll.h>
@@ -32,7 +33,8 @@ public:
   ~LSSEventLoop();
 
   // @param timeout [in] specifies the maximum wait time (ms) in epoll, -1 == infinite
-  void loop(int timeout = -1);
+  // @note in order to wake up epoll every second for timer tasks, we set timeout = 1000
+  void loop(int timeout = 1000);
 
   // @brief set running_ flag false to end this eventloop
   void quit();
@@ -74,7 +76,15 @@ public:
    * enqueue it into the task queue
    */
   void enqueueTask(const std::function<void()> &f);   // lvalue version
-  void enqueueTask(const std::function<void()> &&f);  // rvalue version
+  void enqueueTask(std::function<void()> &&f);  // rvalue version
+
+  // Time Wheeling
+  void insertEntry(uint32_t delay, EntryPtr entry);
+
+  void runAfter(int delay, const std::function<void()> &cb);
+  void runAfter(int delay, std::function<void()> &&cb);
+  void runEvery(int interval, const std::function<void()> &cb);
+  void runEvery(int interval, std::function<void()> &&cb);
 
 private:
 
@@ -100,6 +110,8 @@ private:
   std::queue<std::function<void()>> tasks_;   // task queue
   std::mutex lock_;  // for task queue
   LSSPipeEventPtr pipe_;
+
+  LSSTimingWheel wheel_;
 };
 
 } // namespace lssvc::network
