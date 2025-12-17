@@ -1,8 +1,9 @@
 #include "network/net/lssvc_eventloop.h"
 #include "network/base/lssvc_netlogger.h"
 #include "network/net/lssvc_event.h"
-#include "utils/lssvc_logstream.h"
 #include "utils/lssvc_logger.h"
+#include "utils/lssvc_logstream.h"
+#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -12,20 +13,23 @@
 using namespace lssvc::network;
 
 // @brief use this variable to store EventLoop* object in a thread
-// @note the number of 't_local_eventloop' equals to the number of runing threads
-// using this 'thread_local' variable, we can judge whether a EventLoop object belongs to a
-// thread or not (in order to avoid cross-thread execution)
+// @note the number of 't_local_eventloop' equals to the number of runing
+// threads using this 'thread_local' variable, we can judge whether a EventLoop
+// object belongs to a thread or not (in order to avoid cross-thread execution)
 static thread_local LSSEventLoop *t_local_eventloop = nullptr;
 
-LSSEventLoop::LSSEventLoop() : epoll_fd_(-1) {
+LSSEventLoop::LSSEventLoop()
+    : epoll_fd_(-1), epoll_events_(LSS_EPOLLEVENTS_MAXSIZE) {
   epoll_fd_ = ::epoll_create1(0);
   if (epoll_fd_ == -1) {
     NETWORK_ERROR << "Failed to initialize EventLoop!\r\n";
     exit(-1);
   }
-  epoll_events_.reserve(LSS_EPOLLEVENTS_MAXSIZE);
-  epoll_events_.clear();
-  if(t_local_eventloop != nullptr) {
+
+  // epoll_events_.reserve(LSS_EPOLLEVENTS_MAXSIZE);
+  // epoll_events_.clear();
+
+  if (t_local_eventloop != nullptr) {
     NETWORK_ERROR << "there already had an eventloop.\r\n";
     exit(-1);
   }
@@ -114,44 +118,44 @@ void LSSEventLoop::loop(int timeout) {
     if (nready > 0) {
       for (size_t i = 0; i < nready; ++i) {
         struct epoll_event &ev = epoll_events_[i];
-        if(ev.data.fd <= 0) {
+        if (ev.data.fd <= 0) {
           continue;
         }
-        if(events_.find(ev.data.fd) == events_.end()) {
+        if (events_.find(ev.data.fd) == events_.end()) {
           continue;
         }
 
         LSSEventPtr &event = events_[ev.data.fd];
-        if(ev.events & EPOLLERR) {
+        if (ev.events & EPOLLERR) {
           // meets a error
           int error = 0;
           socklen_t len = sizeof(error);
           getsockopt(event->getFd(), SOL_SOCKET, SO_ERROR, &error, &len);
 
           event->onError(strerror(error));
-        } else if((ev.events & EPOLLHUP) && !(ev.events & EPOLLIN)) {
+        } else if ((ev.events & EPOLLHUP) && !(ev.events & EPOLLIN)) {
           event->onClose();
-        } else if(ev.events & (EPOLLIN | EPOLLPRI)) {
+        } else if (ev.events & (EPOLLIN | EPOLLPRI)) {
           event->onRead();
-        } else if(ev.events & EPOLLOUT) {
+        } else if (ev.events & EPOLLOUT) {
           event->onWrite();
         }
       }
 
-      if(nready >= epoll_events_.size() - LSS_EPOLLEVENTS_RESIZE_DELTA) {
+      if (nready >= epoll_events_.size() - LSS_EPOLLEVENTS_RESIZE_DELTA) {
         epoll_events_.resize(epoll_events_.size() * LSS_EPOLLEVENTS_GROWFACTOR);
       }
 
       runTask();
 
-    } else if(nready < 0) {
+    } else if (nready < 0) {
       NETWORK_ERROR << "epoll wait meets an error: " << errno << "\r\n";
     }
   }
 }
 
 void LSSEventLoop::enqueueTask(const std::function<void()> &f) {
-  if(isInLoopThread()) {
+  if (isInLoopThread()) {
     f();
   } else {
     std::lock_guard<std::mutex> lock(lock_);
@@ -162,7 +166,7 @@ void LSSEventLoop::enqueueTask(const std::function<void()> &f) {
 }
 
 void LSSEventLoop::enqueueTask(const std::function<void()> &&f) {
-  if(isInLoopThread()) {
+  if (isInLoopThread()) {
     f();
   } else {
     std::lock_guard<std::mutex> lock(lock_);
@@ -173,18 +177,16 @@ void LSSEventLoop::enqueueTask(const std::function<void()> &&f) {
 }
 
 void LSSEventLoop::checkInLoopThread() {
-  if(!isInLoopThread()) {
+  if (!isInLoopThread()) {
     NETWORK_ERROR << "It is forbidden to run loop on other thread.\r\n";
     exit(-1);
   }
 }
 
-bool LSSEventLoop::isInLoopThread() const {
-  return this == t_local_eventloop;
-}
+bool LSSEventLoop::isInLoopThread() const { return this == t_local_eventloop; }
 
 void LSSEventLoop::initPipe() {
-  if(pipe_ == nullptr) {
+  if (pipe_ == nullptr) {
     pipe_ = std::make_shared<LSSPipeEvent>(this);
     this->addEvent(pipe_);
   }
@@ -198,7 +200,7 @@ void LSSEventLoop::wakeUp() {
 
 void LSSEventLoop::runTask() {
   std::lock_guard<std::mutex> lock(lock_);
-  while(!tasks_.empty()) {
+  while (!tasks_.empty()) {
     auto &f = tasks_.front();
     f();
     tasks_.pop();

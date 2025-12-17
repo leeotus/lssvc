@@ -13,7 +13,7 @@
 #include <functional>
 #include <queue>
 
-#define LSS_EPOLLEVENTS_MAXSIZE (1024 * 1024)
+#define LSS_EPOLLEVENTS_MAXSIZE (1024 * 512)
 #define LSS_EPOLLEVENTS_GROWFACTOR (2)
 #define LSS_EPOLLEVENTS_RESIZE_DELTA (128)
 
@@ -69,7 +69,7 @@ public:
    * @brief enqueue a task
    * @param f function representing a task
    * @note we use round-robin load balancing algo.(@see EventLoopThreadPool) to assign the input task into
-   * EventLoops (one EventLoop per thread), therefore, this task be assigned back(@see 'getNextLoop' in
+   * EventLoops (one EventLoop per thread), therefore, this task may be assigned back(@see 'getNextLoop' in
    * EventLoopThreadPool) to the current running thread(/EventLoop). In this case, just run it without
    * enqueue it into the task queue
    */
