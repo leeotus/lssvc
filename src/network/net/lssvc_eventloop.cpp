@@ -111,7 +111,7 @@ bool LSSEventLoop::enableWriting(const LSSEventPtr &event, bool en) {
 void LSSEventLoop::loop(int timeout) {
   running_ = true; // set running_ flag true
   while (running_) {
-    epoll_events_.clear();
+    memset(&epoll_events_[0], 0, sizeof(struct epoll_event)*epoll_events_.size());
     int nready =
         ::epoll_wait(epoll_fd_, (struct epoll_event *)&epoll_events_[0],
                      static_cast<int>(epoll_events_.size()), timeout);
