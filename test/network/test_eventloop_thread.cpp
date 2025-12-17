@@ -27,5 +27,8 @@ int main(int argc, char **argv) {
       std::cout << "loop:" << e << ", thread id:" << std::this_thread::get_id() << "\r\n";
     });
   }
+  while(true) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
   return 0;
 }
