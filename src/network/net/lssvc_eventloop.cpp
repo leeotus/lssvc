@@ -3,6 +3,7 @@
 #include "network/net/lssvc_event.h"
 #include "utils/lssvc_logger.h"
 #include "utils/lssvc_logstream.h"
+#include "utils/lssvc_time.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
@@ -111,7 +112,8 @@ bool LSSEventLoop::enableWriting(const LSSEventPtr &event, bool en) {
 void LSSEventLoop::loop(int timeout) {
   running_ = true; // set running_ flag true
   while (running_) {
-    memset(&epoll_events_[0], 0, sizeof(struct epoll_event)*epoll_events_.size());
+    memset(&epoll_events_[0], 0,
+           sizeof(struct epoll_event) * epoll_events_.size());
     int nready =
         ::epoll_wait(epoll_fd_, (struct epoll_event *)&epoll_events_[0],
                      static_cast<int>(epoll_events_.size()), timeout);
@@ -148,6 +150,9 @@ void LSSEventLoop::loop(int timeout) {
 
       runTask();
 
+      int64_t now = lssvc::utils::LSSTime::nowMs();
+      wheel_.onTimer(now);
+
     } else if (nready < 0) {
       NETWORK_ERROR << "epoll wait meets an error: " << errno << "\r\n";
     }
@@ -165,7 +170,7 @@ void LSSEventLoop::enqueueTask(const std::function<void()> &f) {
   }
 }
 
-void LSSEventLoop::enqueueTask(const std::function<void()> &&f) {
+void LSSEventLoop::enqueueTask(std::function<void()> &&f) {
   if (isInLoopThread()) {
     f();
   } else {
@@ -205,4 +210,24 @@ void LSSEventLoop::runTask() {
     f();
     tasks_.pop();
   }
+}
+
+void LSSEventLoop::insertEntry(uint32_t delay, EntryPtr entry) {
+  enqueueTask([this, delay, entry]() { wheel_.insertEntry(delay, entry); });
+}
+
+void LSSEventLoop::runAfter(int delay, const std::function<void()> &cb) {
+  enqueueTask([this, delay, cb]() { wheel_.runAfter(delay, cb); });
+}
+
+void LSSEventLoop::runAfter(int delay, std::function<void()> &&cb) {
+  enqueueTask([this, delay, cb]() { wheel_.runAfter(delay, cb); });
+}
+
+void LSSEventLoop::runEvery(int interval, const std::function<void()> &cb) {
+  enqueueTask([this, interval, cb]() { wheel_.runEvery(interval, cb); });
+}
+
+void LSSEventLoop::runEvery(int interval, std::function<void()> &&cb) {
+  enqueueTask([this, interval, cb]() { wheel_.runEvery(interval, cb); });
 }

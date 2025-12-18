@@ -2,6 +2,7 @@
 
 #include "utils/lssvc_logstream.h"
 #include "utils/lssvc_singleton.h"
+#include "utils/lssvc_logger.h"
 
 #define NETWORK_TRACE   LSSVC_LOG_TRACE
 #define NETWORK_DEBUG   LSSVC_LOG_DEBUG
