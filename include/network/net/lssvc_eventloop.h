@@ -14,9 +14,10 @@
 #include <functional>
 #include <queue>
 
-#define LSS_EPOLLEVENTS_MAXSIZE (1024 * 512)
-#define LSS_EPOLLEVENTS_GROWFACTOR (2)
-#define LSS_EPOLLEVENTS_RESIZE_DELTA (128)
+constexpr int LSS_EPOLLEVENTS_MAXSIZE = (1024 * 512);
+constexpr int LSS_EPOLLEVENTS_GROWFACTOR = (2);
+constexpr int LSS_EPOLLEVENTS_RESIZE_DELTA = (128);
+constexpr double LSS_EPOLLEVENTS_THRESHOLD = (0.8);
 
 namespace lssvc::network {
 

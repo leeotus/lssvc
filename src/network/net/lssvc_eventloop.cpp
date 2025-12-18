@@ -144,7 +144,7 @@ void LSSEventLoop::loop(int timeout) {
         }
       }
 
-      if (nready >= epoll_events_.size() - LSS_EPOLLEVENTS_RESIZE_DELTA) {
+      if(nready >= static_cast<int>(epoll_events_.size() * LSS_EPOLLEVENTS_THRESHOLD)) {
         epoll_events_.resize(epoll_events_.size() * LSS_EPOLLEVENTS_GROWFACTOR);
       }
 
