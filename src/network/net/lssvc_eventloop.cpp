@@ -117,7 +117,7 @@ void LSSEventLoop::loop(int timeout) {
     int nready =
         ::epoll_wait(epoll_fd_, (struct epoll_event *)&epoll_events_[0],
                      static_cast<int>(epoll_events_.size()), timeout);
-    if (nready > 0) {
+    if (nready >= 0) {
       for (size_t i = 0; i < nready; ++i) {
         struct epoll_event &ev = epoll_events_[i];
         if (ev.data.fd <= 0) {
