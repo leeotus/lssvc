@@ -3,6 +3,7 @@
 
 #include "lssvc_singleton.h"
 #include "lssvc_logger.h"
+#include "lssvc_singleton.h"
 #include <sstream>
 #include <iostream>
 
