@@ -56,20 +56,20 @@ uint16_t LSSInetAddress::getPort() const { return std::atoi(port_.c_str()); }
 void LSSInetAddress::getSockAddr(struct sockaddr *saddr) const {
   if (is_ipv6_) {
     struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)saddr;
-    memset(addr_in6, 0x00, sizeof(struct sockaddr_in6));
+    memset(addr_in6, 0, sizeof(struct sockaddr_in6));
     addr_in6->sin6_family = AF_INET6;
     addr_in6->sin6_port = htons(std::atoi(port_.c_str()));
     if (::inet_pton(AF_INET6, addr_.c_str(), &addr_in6->sin6_addr) < 0) {
     }
-    return;
+  } else {
+    struct sockaddr_in *addr_in = (struct sockaddr_in *)saddr;
+    memset(addr_in, 0, sizeof(struct sockaddr_in));
+    addr_in->sin_family = AF_INET;
+    addr_in->sin_port = htons(std::atoi(port_.c_str()));
+    if (::inet_pton(AF_INET, addr_.c_str(), &addr_in->sin_addr) < 0) {
+    }
   }
 
-  struct sockaddr_in *addr_in = (struct sockaddr_in *)saddr;
-  memset(addr_in, 0x00, sizeof(struct sockaddr_in));
-  addr_in->sin_family = AF_INET;
-  addr_in->sin_port = htons(std::atoi(port_.c_str()));
-  if (::inet_pton(AF_INET, addr_.c_str(), &addr_in->sin_addr) < 0) {
-  }
 }
 
 bool LSSInetAddress::isIpv6() const { return is_ipv6_; }
