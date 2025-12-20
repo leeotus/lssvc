@@ -74,10 +74,10 @@ int LSSocketOpt::accept(LSSInetAddress *peeraddr) {
   } else if (addr.sin6_family == AF_INET) {
     // ipv4
     char ip[16] = {0};
-    struct sockaddr_in *addr = (struct sockaddr_in *)&addr;
-    ::inet_ntop(AF_INET, &(addr->sin_addr.s_addr), ip, sizeof(ip));
+    struct sockaddr_in *saddr = (struct sockaddr_in *)&addr;
+    ::inet_ntop(AF_INET, &(saddr->sin_addr.s_addr), ip, sizeof(ip));
     peeraddr->setAddr(ip);
-    peeraddr->setPort(ntohs(addr->sin_port));
+    peeraddr->setPort(ntohs(saddr->sin_port));
   }
   return sock;
 }
@@ -109,6 +109,7 @@ LSSInetAddressPtr LSSocketOpt::getLocalAddr() {
     peeraddr->setPort(ntohs(addr_in.sin6_port));
     peeraddr->setIsIpv6(true);
   }
+  return peeraddr;
 }
 
 LSSInetAddressPtr LSSocketOpt::getPeerAddr() {
