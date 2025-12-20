@@ -29,9 +29,16 @@ public:
 
   ~LSSEvent();
 
+  // @brief handle read events
   virtual void onRead() {}
+
+  // @brief handle write events
   virtual void onWrite() {}
+
+  // @brief handle close events
   virtual void onClose() {}
+
+  // @brief handle error events
   virtual void onError(const std::string &msg) {}
 
   bool enableWriting(bool en);
