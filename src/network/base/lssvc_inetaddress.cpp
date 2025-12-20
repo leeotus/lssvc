@@ -12,13 +12,19 @@ int LSSInetAddress::getIpAndPort(const std::string &host, std::string &ip,
                                  std::string &port) {
   std::string delim{":"};
   auto ret = lssvc::utils::LSSString::split(host, delim);
-  if (ret.size() < 2) {
-    NETWORK_ERROR << "Failed to split host address\r\n";
+  if (ret.size() == 1) {
+    // @todo need the validity of the result string (string must be an ip address)
+    NETWORK_WARN << "Failed to split host address\r\n";
+    ip = ret[0];
+    port = "0";
     return -1;
+  } else if (ret.size() == 2) {
+    ip = ret[0];
+    port = ret[1];
+    return 0;
   }
-  ip = ret[0];
-  port = ret[1];
-  return 0;
+  NETWORK_ERROR << "No input ip address and port, please check.\r\n";
+  return -1;
 }
 
 LSSInetAddress::LSSInetAddress(const std::string &ip, uint16_t port, bool ipv6)
@@ -69,7 +75,6 @@ void LSSInetAddress::getSockAddr(struct sockaddr *saddr) const {
     if (::inet_pton(AF_INET, addr_.c_str(), &addr_in->sin_addr) < 0) {
     }
   }
-
 }
 
 bool LSSInetAddress::isIpv6() const { return is_ipv6_; }

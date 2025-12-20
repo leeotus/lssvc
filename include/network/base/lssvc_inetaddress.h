@@ -44,7 +44,8 @@ public:
    * @param host [in] input host address
    * @param ip [out] ip part of host
    * @param port [out] port part of host
-   * @return 0 if success, else -1
+   * @return 0 if ip and port are assigned successfully, else -1
+   * @note input of ipv6 address format is not supported yet
    */
   static int getIpAndPort(const std::string &host, std::string &ip,
                           std::string &port);
