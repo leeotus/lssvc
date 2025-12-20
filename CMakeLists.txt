@@ -30,6 +30,7 @@ link_directories(${CMAKE_BINARY_DIR}/third_party/jsoncpp/src/lib_json) # cppjson
 
 
 add_subdirectory("${LSSVC_SOURCE_PATH}")
+add_subdirectory(app)
 
 option(TEST_ENABLE "also build the testcases" OFF)
 if(${TEST_ENABLE})
