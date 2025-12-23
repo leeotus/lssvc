@@ -60,24 +60,22 @@ int LSSocketOpt::accept(LSSInetAddress *peeraddr) {
   socklen_t len = sizeof(struct sockaddr_in6);
   int sock = ::accept4(sock_fd_, (struct sockaddr *)&addr, &len,
                        SOCK_CLOEXEC | SOCK_NONBLOCK);
-  if (sock < 0) {
-    NETWORK_ERROR << "Failed to accept client socket.\r\n";
-    return -1;
-  }
-  if (addr.sin6_family == AF_INET6) {
-    // ipv6
-    char ip[INET6_ADDRSTRLEN] = {0};
-    ::inet_ntop(AF_INET6, &(addr.sin6_addr), ip, sizeof(ip));
-    peeraddr->setAddr(ip);
-    peeraddr->setPort(ntohs(addr.sin6_port));
-    peeraddr->setIsIpv6(true);
-  } else if (addr.sin6_family == AF_INET) {
-    // ipv4
-    char ip[16] = {0};
-    struct sockaddr_in *saddr = (struct sockaddr_in *)&addr;
-    ::inet_ntop(AF_INET, &(saddr->sin_addr.s_addr), ip, sizeof(ip));
-    peeraddr->setAddr(ip);
-    peeraddr->setPort(ntohs(saddr->sin_port));
+  if (sock > 0) {
+    if (addr.sin6_family == AF_INET6) {
+      // ipv6
+      char ip[INET6_ADDRSTRLEN] = {0};
+      ::inet_ntop(AF_INET6, &(addr.sin6_addr), ip, sizeof(ip));
+      peeraddr->setAddr(ip);
+      peeraddr->setPort(ntohs(addr.sin6_port));
+      peeraddr->setIsIpv6(true);
+    } else if (addr.sin6_family == AF_INET) {
+      // ipv4
+      char ip[16] = {0};
+      struct sockaddr_in *saddr = (struct sockaddr_in *)&addr;
+      ::inet_ntop(AF_INET, &(saddr->sin_addr.s_addr), ip, sizeof(ip));
+      peeraddr->setAddr(ip);
+      peeraddr->setPort(ntohs(saddr->sin_port));
+    }
   }
   return sock;
 }
