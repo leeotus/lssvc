@@ -48,6 +48,7 @@ public:
    * @brief accept new connections and parse the address information
    * of the client (peer end)
    * @param peeraddr [out] store the incoming client's address and port
+   * @return the client fd
    */
   int accept(LSSInetAddress *peeraddr);
 
@@ -63,19 +64,19 @@ public:
   // @brief obtain the peer address connected to the current socket
   LSSInetAddressPtr getPeerAddr();
 
-  void setTcpNoDelay(bool on);
+  void setTcpNoDelay(bool on = true);
 
-  void setReuseAddr(bool on);
+  void setReuseAddr(bool on = true);
 
   /**
    * @brief control whether multiple processes are allowed to
    * bind to the same port
    * @param on [in] true if allow
    */
-  void setReusePort(bool on);
+  void setReusePort(bool on = true);
 
   // @brief control whether to enable the TCP keep-alive or not
-  void setKeepAlive(bool on);
+  void setKeepAlive(bool on = true);
 
 private:
   int sock_fd_;

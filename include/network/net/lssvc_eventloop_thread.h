@@ -28,7 +28,7 @@ public:
 
 private:
   /**
-   * @brief a loop per thread
+   * @brief one loop per thread
    * @note this function, which used in the lambda function (in the default
    * constructor), is the entry of 'EventLoopThread', it waits util the flag
    * 'running_' is true, and then make the 'EventLoop' work properly.
