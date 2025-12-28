@@ -43,3 +43,6 @@
 /.vscode
 *.log
 log/
+
+# clangd
+/.cache
