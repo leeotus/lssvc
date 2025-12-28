@@ -1,16 +1,17 @@
 #ifndef __LSSVC_ACCEPTOR_H__
 #define __LSSVC_ACCEPTOR_H__
 
-#include "network/base/lssvc_inetaddress.h"
 #include "lssvc_event.h"
 #include "lssvc_eventloop.h"
+#include "network/base/lssvc_inetaddress.h"
 
 #include <functional>
 #include <memory>
 
 namespace lssvc::network {
 
-using AcceptCallback = std::function<void(int sock_fd, const LSSInetAddress &addr)>;
+using AcceptCallback =
+    std::function<void(int sock_fd, const LSSInetAddress &addr)>;
 
 class LSSocketOpt;
 class LSSAcceptor : public LSSEvent {
@@ -23,9 +24,9 @@ public:
   LSSAcceptor(LSSEventLoop *loop, const LSSInetAddress &addr);
   ~LSSAcceptor();
 
-  void setAcceptCallback(AcceptCallback &cb);
-
-  void setAcceptCallback(AcceptCallback &&cb);
+  template <typename Callback> void setAcceptCallback(Callback &&cb) {
+    accept_cb_ = std::forward<Callback>(cb);
+  }
 
   /// @brief start the (server) acceptor
   void start();
@@ -51,6 +52,6 @@ private:
   LSSocketOpt *socket_opt_{nullptr};
 };
 
-}   // lssvc::network
+} // namespace lssvc::network
 
 #endif
