@@ -9,7 +9,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <errno.h>
 
 using namespace lssvc::network;
 
@@ -53,7 +52,12 @@ void LSSEventLoop::addEvent(const LSSEventPtr &event) {
   memset(&ev, 0, sizeof(struct epoll_event));
   ev.events = event->event_;
   ev.data.fd = event->getFd();
-  epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, event->getFd(), &ev); // add
+  int ret = epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, event->getFd(), &ev); // add
+  if (ret == -1) {
+    // error occurs
+    NETWORK_ERROR << "Failed to add file description: " << event->getFd()
+                  << "\r\n";
+  }
 }
 
 void LSSEventLoop::delEvent(const LSSEventPtr &event) {
@@ -144,7 +148,8 @@ void LSSEventLoop::loop(int timeout) {
         }
       }
 
-      if(nready >= static_cast<int>(epoll_events_.size() * LSS_EPOLLEVENTS_THRESHOLD)) {
+      if (nready >=
+          static_cast<int>(epoll_events_.size() * LSS_EPOLLEVENTS_THRESHOLD)) {
         epoll_events_.resize(epoll_events_.size() * LSS_EPOLLEVENTS_GROWFACTOR);
       }
 
