@@ -11,13 +11,14 @@ using namespace lssvc::network;
 
 LSSTcpConnection::LSSTcpConnection(LSSEventLoop *loop, int sockfd,
                                    const LSSInetAddress &localAddr,
-                                   LSSInetAddress &peerAddr)
+                                   const LSSInetAddress &peerAddr)
     : LSSConnection(loop, sockfd, localAddr, peerAddr) {}
 
 LSSTcpConnection::~LSSTcpConnection() { onClose(); }
 
 void LSSTcpConnection::onRead() {
   if (closed_.load()) {
+    // this socket has already close
     NETWORK_TRACE << "host: " << getPeerAddr().toIpWithPort()
                   << "had close\r\n";
     return;
@@ -52,6 +53,9 @@ void LSSTcpConnection::onClose() {
       close_cb_(
           std::dynamic_pointer_cast<LSSTcpConnection>(shared_from_this()));
     }
+
+    // close this tcp connection
+    LSSEvent::close();
   }
 }
 
@@ -113,6 +117,41 @@ void LSSTcpConnection::onWrite() {
   }
 }
 
+void LSSTcpConnection::setTimeoutCallback(int timeout,
+                                          const TimeoutCallback &cb) {
+  auto ptr = std::dynamic_pointer_cast<LSSTcpConnection>(shared_from_this());
+  loop_->runAfter(timeout, [&cb, &ptr]() { cb(ptr); });
+}
+
+void LSSTcpConnection::setTimeoutCallback(int timeout, TimeoutCallback &&cb) {
+  auto ptr = std::dynamic_pointer_cast<LSSTcpConnection>(shared_from_this());
+  loop_->runAfter(timeout, [cb, &ptr]() { cb(ptr); });
+}
+
+void LSSTcpConnection::onTimeout() {
+  // prevent TCP connections from occupying resources
+  NETWORK_TRACE << "host: " << getPeerAddr().toIpWithPort()
+                << " timeout and close it.\r\n";
+  onClose();
+}
+
+void LSSTcpConnection::enableCheckIdleTimeout(int32_t max_time) {
+  // let the weak pointer hold "this"
+  auto tp = std::make_shared<TimeoutEntry>(
+      std::dynamic_pointer_cast<LSSTcpConnection>(shared_from_this()));
+  max_idle_time_ = max_time;
+  timeout_entry_ = tp;
+  loop_->insertEntry(max_time, tp);
+}
+
+void LSSTcpConnection::extendLife() {
+  auto tp = timeout_entry_.lock();
+  if (tp) {
+    // extend connection life by adding reference of a shared_ptr object
+    loop_->insertEntry(max_idle_time_, tp);
+  }
+}
+
 void LSSTcpConnection::send(std::list<BufferNodePtr> &list) {
   loop_->enqueueTask([this, &list]() { sendInLoop(list); });
 }
@@ -160,6 +199,13 @@ void LSSTcpConnection::sendInLoop(const char *buf, size_t size) {
       send_len = 0;
     }
     size -= send_len;
+    if (size == 0) {
+      if (write_complete_cb_) {
+        write_complete_cb_(
+            std::dynamic_pointer_cast<LSSTcpConnection>(shared_from_this()));
+      }
+      return;
+    }
   }
   if (size > 0) {
     struct iovec vec;
