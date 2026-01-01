@@ -22,8 +22,8 @@ enum {
 
 using ContextPtr = std::shared_ptr<void>;
 class LSSConnection;
-using ConectionPtr = std::shared_ptr<LSSConnection>;
-using ActiveCallback = std::function<void(const ConectionPtr &)>;
+using ConnectionPtr = std::shared_ptr<LSSConnection>;
+using ActiveCallback = std::function<void(const ConnectionPtr &)>;
 
 class LSSConnection : public LSSEvent {
 public:
