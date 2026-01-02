@@ -44,7 +44,7 @@ public:
                    const LSSInetAddress &localAddr,
                    const LSSInetAddress &peerAddr);
 
-  ~LSSTcpConnection();
+  virtual ~LSSTcpConnection();
 
   /**
    * @brief set close callback for connection

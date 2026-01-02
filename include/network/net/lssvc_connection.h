@@ -74,8 +74,8 @@ private:
   // stores different types of context data
   std::unordered_map<int, ContextPtr> contexts_;
 
-  // automatically execute avtive callback when the conection transitions from
-  // an inactive state to an active one, (for example, initialize connection
+  // automatically execute acvtive callback when the conection transitions from
+  // an inactive state into an active one, (for example, initialize connection
   // resources, record avtivity logs ...)
   ActiveCallback active_cb_;
 

@@ -37,7 +37,7 @@ void LSSTcpConnection::onRead() {
       break;
     } else {
       if (err != EAGAIN && err != EINTR && err != EWOULDBLOCK) {
-        NETWORK_ERROR << "read error:" << err << "\r\n";
+        // NETWORK_ERROR << "read error:" << err << "\r\n";
         onClose();
       }
       break;

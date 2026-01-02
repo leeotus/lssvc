@@ -28,23 +28,23 @@ public:
     accept_cb_ = std::forward<Callback>(cb);
   }
 
-  /// @brief start the (server) acceptor
+  // @brief start the (server) acceptor
   void start();
 
-  /// @brief stop the (server) accepter
+  // @brief stop the (server) accepter
   void stop();
 
-  /// @brief handle read events
+  // @brief handle read events
   void onRead() override;
 
-  /// @brief handle error events
+  // @brief handle error events
   void onError(const std::string &msg) override;
 
-  /// @brief handle close events
+  // @brief handle close events
   void onClose() override;
 
 private:
-  /// @brief open file description of this (server)socket
+  // @brief open file description of this (server)socket
   void open();
 
   LSSInetAddress addr_;

@@ -7,7 +7,7 @@ using namespace lssvc::network;
 
 LSSEvent::LSSEvent() : loop_(nullptr), fd_(-1), event_(0) {}
 
-LSSEvent::LSSEvent(LSSEventLoop *loop) : loop_(loop) {}
+LSSEvent::LSSEvent(LSSEventLoop *loop) : loop_(loop), fd_(-1), event_(0) {}
 
 LSSEvent::LSSEvent(LSSEventLoop *loop, int fd)
     : loop_(loop), fd_(fd), event_(0) {}
