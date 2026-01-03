@@ -120,6 +120,10 @@ private:
   std::weak_ptr<TimeoutEntry> timeout_entry_;
 };
 
+/**
+ * @brief insert this entry to the EventLoop, once this entry is destructed,
+ * the corresponding TcpConnection will be destroyed too
+ */
 struct TimeoutEntry {
   TimeoutEntry(const TcpConnectionPtr &c) : conn(c) {}
   ~TimeoutEntry() {

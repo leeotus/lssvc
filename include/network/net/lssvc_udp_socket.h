@@ -50,7 +50,7 @@ public:
     close_cb_ = std::forward<Callback>(cb);
   }
 
-  template <typename Callback> void setRecvMsgCallback(const Callback &&cb) {
+  template <typename Callback> void setRecvMsgCallback(Callback &&cb) {
     message_cb_ = std::forward<Callback>(cb);
   }
 

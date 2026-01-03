@@ -9,6 +9,8 @@ add_executable("test_tcpconnection" test_tcpconnection.cpp)
 add_executable("test_tcpserver" test_tcpserver.cpp)
 add_executable("test_tcpclient" test_tcpclient.cpp)
 add_executable("test_dns_service" test_dns_service.cpp)
+add_executable("test_udpserver" test_udpserver.cpp)
+add_executable("test_udpclient" test_udpclient.cpp)
 
 target_link_libraries(
   "test_eventloop_thread" PRIVATE lssvc::utils lssvc::net
@@ -40,4 +42,12 @@ target_link_libraries(
 
 target_link_libraries(
   "test_dns_service" PRIVATE lssvc::utils lssvc::net
+)
+
+target_link_libraries(
+  "test_udpserver" PRIVATE lssvc::utils lssvc::net
+)
+
+target_link_libraries(
+  "test_udpclient" PRIVATE lssvc::utils lssvc::net
 )

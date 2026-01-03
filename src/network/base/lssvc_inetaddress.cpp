@@ -13,7 +13,8 @@ int LSSInetAddress::getIpAndPort(const std::string &host, std::string &ip,
   std::string delim{":"};
   auto ret = lssvc::utils::LSSString::split(host, delim);
   if (ret.size() == 1) {
-    // @todo need the validity of the result string (string must be an ip address)
+    // @todo need the validity of the result string (string must be an ip
+    // address)
     NETWORK_WARN << "Failed to split host address\r\n";
     ip = ret[0];
     port = "0";

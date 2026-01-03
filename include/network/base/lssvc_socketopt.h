@@ -61,11 +61,16 @@ public:
   // @brief obtain the current (server) socket's address
   LSSInetAddressPtr getLocalAddr();
 
-  // @brief obtain the peer address connected to the current socket
+  // @brief obtain connected client's address
   LSSInetAddressPtr getPeerAddr();
 
+  // @brief set tcp socket "nodelay"
   void setTcpNoDelay(bool on = true);
 
+  /**
+   * @brief set socket reuses the same address
+   * @param on [in] true to turn on SO_REUSEADDR feature, false to turn off
+   */
   void setReuseAddr(bool on = true);
 
   /**

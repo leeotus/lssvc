@@ -12,8 +12,8 @@ namespace lssvc::network {
 // @todo io_uring may be implemented in the future
 
 class LSSEventLoop;
-constexpr int kEventRead = (EPOLLIN | EPOLLPRI | EPOLLET); // use ET
-constexpr int kEventWrite = (EPOLLOUT | EPOLLET);
+constexpr long long kEventRead = (EPOLLIN | EPOLLPRI | EPOLLET); // use ET
+constexpr long long kEventWrite = (EPOLLOUT | EPOLLET);
 
 class LSSEvent : public std::enable_shared_from_this<LSSEvent> {
   friend class LSSEventLoop;
