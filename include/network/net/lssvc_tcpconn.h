@@ -20,14 +20,6 @@ using TimeoutCallback = std::function<void(const TcpConnectionPtr &)>;
 using MessageCallback =
     std::function<void(const TcpConnectionPtr &, LSSMsgBuffer &buffer)>;
 
-struct BufferNode {
-  BufferNode(void *buf, size_t s) : addr(buf), size(s) {}
-  void *addr{nullptr};
-  size_t size{0};
-};
-
-using BufferNodePtr = std::shared_ptr<BufferNode>;
-
 struct TimeoutEntry;
 
 class LSSTcpConnection : public LSSConnection {

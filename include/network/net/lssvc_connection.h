@@ -20,6 +20,15 @@ enum {
   kFlvContext,
 };
 
+// @brief buffer node, stores data which need to be written
+struct BufferNode {
+  BufferNode(void *buf, size_t s) : addr(buf), size(s) {}
+  void *addr{nullptr}; // data
+  size_t size{0};      // length of the data
+};
+
+using BufferNodePtr = std::shared_ptr<BufferNode>;
+
 using ContextPtr = std::shared_ptr<void>;
 class LSSConnection;
 using ConnectionPtr = std::shared_ptr<LSSConnection>;
