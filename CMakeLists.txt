@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(LSSVC_INCLUDE_PATH "include")
 set(LSSVC_SOURCE_PATH "src")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(LSSVC_3RDPARTY_PATH "third_party")
 
 if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.2.9)
@@ -21,10 +22,15 @@ endif ()
 
 include_directories("${LSSVC_INCLUDE_PATH}")
 include_directories("${LSSVC_3RDPARTY_PATH}/jsoncpp/include")
-link_directories(${CMAKE_BINARY_DIR}/third_party/jsoncpp/src/lib_json)
+add_subdirectory("${LSSVC_3RDPARTY_PATH}/jsoncpp")
+add_subdirectory("${LSSVC_3RDPARTY_PATH}/googletest")
+
+link_directories(${CMAKE_BINARY_DIR}/lib) # googletest lib
+link_directories(${CMAKE_BINARY_DIR}/third_party/jsoncpp/src/lib_json) # cppjson lib
+
 
 add_subdirectory("${LSSVC_SOURCE_PATH}")
-add_subdirectory("${LSSVC_3RDPARTY_PATH}/jsoncpp")
+add_subdirectory(app)
 
 option(TEST_ENABLE "also build the testcases" ON)
 if(${TEST_ENABLE})
