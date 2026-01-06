@@ -25,6 +25,8 @@ void LSSTcpConnection::onRead() {
   }
   while (true) {
     int err;
+
+    // read data from the client
     auto ret = message_buffer_.readFd(fd_, &err);
     if (ret > 0) {
       if (message_cb_) {

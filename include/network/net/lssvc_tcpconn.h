@@ -17,8 +17,11 @@ using TcpConnectionPtr = std::shared_ptr<LSSTcpConnection>;
 using CloseConnectionCallback = std::function<void(const TcpConnectionPtr &)>;
 using WriteCompleteCallback = std::function<void(const TcpConnectionPtr &)>;
 using TimeoutCallback = std::function<void(const TcpConnectionPtr &)>;
+
+// con: pointer to the incoming connection
+// buffer: the buffer storing the data/message
 using MessageCallback =
-    std::function<void(const TcpConnectionPtr &, LSSMsgBuffer &buffer)>;
+    std::function<void(const TcpConnectionPtr &con, LSSMsgBuffer &buffer)>;
 
 struct TimeoutEntry;
 
@@ -106,10 +109,12 @@ private:
   // of std::atomic<bool> is fine too
   std::atomic<bool> closed_{false}; // whether this connection is closed or not
 
-  // Automately execute this function when connection is closed.
+  // automately execute this function when connection is closed.
   CloseConnectionCallback close_cb_;
 
   LSSMsgBuffer message_buffer_;
+
+  // message callback, execute this callback when there's a message
   MessageCallback message_cb_;
 
   std::vector<struct iovec>

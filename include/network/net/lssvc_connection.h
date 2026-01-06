@@ -12,12 +12,13 @@
 
 namespace lssvc::network {
 
+// different types of context
 enum {
-  kNormalContext = 0,
-  kRtmpContext,
-  kHttpContext,
-  kUserContext,
-  kFlvContext,
+  kNormalContext = 0, // text
+  kRtmpContext,       // rtmp
+  kHttpContext,       // http
+  kUserContext,       // user context
+  kFlvContext,        // flv
 };
 
 // @brief buffer node, stores data which need to be written
@@ -48,24 +49,35 @@ public:
   const LSSInetAddress &getLocalAddr() const;
   const LSSInetAddress &getPeerAddr() const;
 
+  /**
+   * @brief set the context data
+   * @param type [in] context type
+   * @param context [in] pointer to the context data
+   */
   void setContext(int type, const std::shared_ptr<void> &context);
-
   template <typename CtxPtr> void setContext(int type, CtxPtr &&context) {
     contexts_[type] = std::forward<CtxPtr>(context);
   }
 
+  /**
+   * @brief get the context data of the input type
+   * @param type [in] type of the context data
+   * @return std::shared_ptr<T> the pointer to the context data
+   */
   template <typename T> std::shared_ptr<T> getContext(int type) const {
     // operations to connection object are proceeded in a single thread, so no
     // need mutex
     auto it = contexts_.find(type);
     if (it != contexts_.end()) {
-      return std::dynamic_pointer_cast<T>(it->second);
+      return std::static_pointer_cast<T>(it->second);
     }
     return std::shared_ptr<T>();
   }
 
+  // @brief clear the indicated type of the context data
   void clearContext(int type);
 
+  // @brief clear all the context data
   void clearContext();
 
   template <typename Callback> void setActiveCallback(Callback &&cb) {

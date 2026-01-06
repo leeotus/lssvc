@@ -49,8 +49,7 @@ public:
   }
 
   /**
-   * @brief handle incoming client's connection request
-   *
+   * @brief accept the incoming client's connection request
    * @param fd [in] client's fd
    * @param addr [in] client's address
    */

@@ -43,7 +43,16 @@ public:
   // @brief handle error events
   virtual void onError(const std::string &msg) {}
 
+  /**
+   * @brief set epoll event writable or not
+   * @param en [in] enable writable if true
+   */
   bool enableWriting(bool en);
+
+  /**
+   * @brief set epoll event readable
+   * @param en [in] enable readable if true
+   */
   bool enableReading(bool en);
 
   // @brief get the fd value
