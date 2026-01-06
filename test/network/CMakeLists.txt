@@ -11,6 +11,8 @@ add_executable("test_tcpclient" test_tcpclient.cpp)
 add_executable("test_dns_service" test_dns_service.cpp)
 add_executable("test_udpserver" test_udpserver.cpp)
 add_executable("test_udpclient" test_udpclient.cpp)
+add_executable("test_tcpserver_fsm" test_tcpserver_fsm.cpp test_context.cpp)
+add_executable("test_tcpclient_fsm" test_tcpclient_fsm.cpp)
 
 target_link_libraries(
   "test_eventloop_thread" PRIVATE lssvc::utils lssvc::net
@@ -51,3 +53,9 @@ target_link_libraries(
 target_link_libraries(
   "test_udpclient" PRIVATE lssvc::utils lssvc::net
 )
+
+target_link_libraries(
+  "test_tcpserver_fsm" PRIVATE lssvc::utils lssvc::net
+)
+
+target_link_libraries("test_tcpclient_fsm" PRIVATE lssvc::utils lssvc::net)
