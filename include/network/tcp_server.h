@@ -45,7 +45,7 @@ public:
   }
 
   template <typename Callback> void setMessageCallback(Callback &&cb) {
-    messsage_cb_ = std::forward<Callback>(cb);
+    message_cb_ = std::forward<Callback>(cb);
   }
 
   /**
@@ -69,7 +69,7 @@ private:
   NewConnnectionCallback new_connection_cb_;
   std::unordered_set<TcpConnectionPtr> connections_;
 
-  MessageCallback messsage_cb_;
+  MessageCallback message_cb_;
   ActiveCallback active_cb_;
   WriteCompleteCallback write_complete_cb_;
   DestroyConnectionCallback destroy_connection_cb_;
