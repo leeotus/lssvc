@@ -26,7 +26,7 @@ void TcpServer::onAccept(int fd, const LSSInetAddress &addr) {
   if (active_cb_) {
     conn->setActiveCallback(active_cb_);
   }
-  conn->setRecvMsgCallback(messsage_cb_);
+  conn->setRecvMsgCallback(message_cb_);
   connections_.insert(conn);
   loop_->addEvent(conn);
 
