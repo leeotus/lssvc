@@ -122,6 +122,9 @@ enum RtmpHandShakeState {
   kHandShakeDone
 };
 
+class RtmpHandShake;
+using RtmpHandShakePtr = std::shared_ptr<RtmpHandShake>;
+
 class RtmpHandShake {
   static constexpr int kRtmpHandShakePacketSize = 1536;
 public:

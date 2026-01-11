@@ -256,7 +256,7 @@ int32_t RtmpHandShake::checkC1S1(const char *data, int bytes) {
         // @note digest and key field can be swapped arbitrarily
         // the length of digest and key field is 764 bytes
         // the length of time and version field is 4 bytes
-        // therefore, the offset of digest is either 8 and 764+8=772
+        // therefore, the offset of digest is either 8 or 764+8=772
         offset = getDigestOffset(handshake, 772, 728);
         if (!verifyDigest(handshake, offset, rtmp_server_key,
                           SERVER_KEY_OPEN_PART_LEN)) {
