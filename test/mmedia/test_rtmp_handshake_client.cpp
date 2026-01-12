@@ -42,14 +42,14 @@ int main(int argc, char **argv) {
     client->setCloseCallback([](const TcpConnectionPtr &conn) {
       if (conn) {
         NETWORK_INFO << "host:" << conn->getPeerAddr().toIpWithPort()
-                     << " closed\r\n";
+                     << " closed";
       }
     });
 
     client->setWriteCompleteCallback([](const TcpConnectionPtr &conn) {
       if (conn) {
         NETWORK_INFO << "host:" << conn->getPeerAddr().toIpWithPort()
-                     << " write complete\r\n";
+                     << " write complete";
         RtmpHandShakePtr shake =
             conn->getContext<RtmpHandShake>(kNormalContext);
         shake->writeComplete();

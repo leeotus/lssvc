@@ -52,7 +52,7 @@ void LSSAcceptor::onRead() {
 }
 
 void LSSAcceptor::onError(const std::string &msg) {
-  NETWORK_ERROR << "acceptor error " << msg << " (err " << errno << ").\r\n";
+  NETWORK_ERROR << "acceptor error " << msg << " (err " << errno << ").";
   onClose();
 }
 
@@ -74,7 +74,7 @@ void LSSAcceptor::open() {
     fd_ = LSSocketOpt::createNonblockingTcpSocket(AF_INET);
   }
   if (fd_ < 0) {
-    NETWORK_ERROR << "Failed to create tcp socket, (err" << errno << ")\r\n";
+    NETWORK_ERROR << "Failed to create tcp socket, (err" << errno << ")";
     exit(-1);
   }
   if (socket_opt_ != nullptr) {

@@ -15,7 +15,7 @@ int TestContext::parseMessage(LSSMsgBuffer &buf) {
       if (buf.readableBytes() >= 4) {
         // assume the header stores the length of the body
         message_length_ = buf.readInt32();
-        NETWORK_DEBUG << "received " << message_length_ << " header\r\n";
+        NETWORK_DEBUG << "received " << message_length_ << " header";
 
         // switch state
         state_ = kTestContextBody;

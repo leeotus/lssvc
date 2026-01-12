@@ -45,14 +45,14 @@ int main(int argc, char **argv) {
       TestContextPtr context = std::make_shared<TestContext>(con);
       context->setTestMessageCallback(
           [](const TcpConnectionPtr &con, const std::string &msg) {
-            NETWORK_DEBUG << "message: " << msg << "\r\n";
+            NETWORK_DEBUG << "message: " << msg;
           });
       con->setContext(kNormalContext, context);
 
       // set write complete callback
       con->setWriteCompleteCallback([&loop](const TcpConnectionPtr &con) {
         NETWORK_DEBUG << "write complete host:"
-                      << con->getPeerAddr().toIpWithPort() << "\r\n";
+                      << con->getPeerAddr().toIpWithPort();
       });
     });
 

@@ -160,7 +160,7 @@ int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
 
     PacketPtr &packet = in_packets_[csid];
     if(!packet) {
-      packet = Packet::newPacket(msg_len);
+      packet = Packet::newPacket2(msg_len);
     }
     RtmpMsgHeaderPtr header = packet->getExt<RtmpMsgHeader>();
     if(!header) {
@@ -204,5 +204,5 @@ int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
 
 void RtmpContext::messageComplete(PacketPtr &&data) {
   // TODO: parse audio & video data
-  RTMP_TRACE << "receive message type" << data->getPacketType() << ", length:" << data->getPacketSize() << "\r\n";
+  RTMP_TRACE << "receive message type" << data->getPacketType() << ", length:" << data->getPacketSize();
 }

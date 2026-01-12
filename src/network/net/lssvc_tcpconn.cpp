@@ -63,7 +63,7 @@ void LSSTcpConnection::onClose() {
 
 void LSSTcpConnection::onError(const std::string &errmsg) {
   NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                << " , error:" << errmsg << "\r\n";
+                << " , error:" << errmsg;
   onClose();
 }
 
@@ -75,7 +75,7 @@ void LSSTcpConnection::onWrite() {
   if (closed_.load()) {
     // already close
     NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                  << " had closed.\r\n";
+                  << " had closed.";
     return;
   }
   if (!io_vec_list_.empty()) {
@@ -133,7 +133,7 @@ void LSSTcpConnection::setTimeoutCallback(int timeout, TimeoutCallback &&cb) {
 void LSSTcpConnection::onTimeout() {
   // prevent TCP connections from occupying resources
   NETWORK_TRACE << "host: " << getPeerAddr().toIpWithPort()
-                << " timeout and close it.\r\n";
+                << " timeout and close it.";
   onClose();
 }
 
@@ -166,7 +166,7 @@ void LSSTcpConnection::sendInLoop(std::list<BufferNodePtr> &list) {
   if (closed_.load()) {
     // already close
     NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                  << " had closed.\r\n";
+                  << " had closed.";
     return;
   }
   for (auto &l : list) {
@@ -185,7 +185,7 @@ void LSSTcpConnection::sendInLoop(const char *buf, size_t size) {
   if (closed_.load()) {
     // already close
     NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                  << " had closed.\r\n";
+                  << " had closed.";
     return;
   }
   size_t send_len = 0;

@@ -69,7 +69,7 @@ void TcpClient::onRead() {
   if (status_ == kTcpConnStatusConnecting) {
     if (checkError()) {
       NETWORK_ERROR << "connect to server:" << server_addr_.toIpWithPort()
-                    << " error:" << errno << "\r\n";
+                    << " error:" << errno;
       // failed to connect to the server
       onClose();
       return;
@@ -85,7 +85,7 @@ void TcpClient::onWrite() {
   if (status_ == kTcpConnStatusConnecting) {
     if (checkError()) {
       NETWORK_ERROR << "connect to server:" << server_addr_.toIpWithPort()
-                    << " error:" << errno << "\r\n";
+                    << " error:" << errno;
       // failed to connect to the server
       onClose();
       return;

@@ -68,7 +68,7 @@ int32_t RtmpHandShake::handShake(LSSMsgBuffer &buf) {
       return 1;
     }
     RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-               << ", received C0C1\r\n";
+               << ", received C0C1";
     int offset = checkC1S1(buf.peek(), kRtmpHandShakePacketSize + 1);
     if (offset >= 0) {
       // success
@@ -88,16 +88,16 @@ int32_t RtmpHandShake::handShake(LSSMsgBuffer &buf) {
       return 1;
     }
     RTMP_TRACE << "host" << connection_->getPeerAddr().toIpWithPort()
-               << ", received C2\r\n";
+               << ", received C2";
     if (checkC2S2(buf.peek(), kRtmpHandShakePacketSize)) {
       buf.retrieve(kRtmpHandShakePacketSize);
       RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-                 << ", handshake done\r\n";
+                 << ", handshake done";
       state_ = kHandShakeDone; // server state 5
       return 0;
     } else {
       RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-                 << ", check C2 failed\r\n";
+                 << ", check C2 failed";
       return -1;
     }
     break;
@@ -126,7 +126,7 @@ int32_t RtmpHandShake::handShake(LSSMsgBuffer &buf) {
         sendC2S2();
       }
     } else {
-      RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort() << ", check S0S1 failed\r\n";
+      RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort() << ", check S0S1 failed";
       return -1;
     }
     break;
@@ -139,7 +139,7 @@ void RtmpHandShake::writeComplete() {
   switch (state_) {
   case kHandShakePostS0S1: {   // server state 2
     RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-               << ", post S0S1\r\n";
+               << ", post S0S1";
     state_ = kHandShakePostS2; // ready to send S2 packet
     sendC2S2();
     break;
@@ -147,24 +147,24 @@ void RtmpHandShake::writeComplete() {
   case kHandShakePostS2: {     // server state 3
     state_ = kHandShakeWaitC2; // wait for C2 packet
     RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-               << ", post S2\r\n";
+               << ", post S2";
     break;
   }
   case kHandShakePostC0C1: { // client state 1, already send C0,C1 packet in the "start"
     RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-               << ", post C0C1\r\n";
+               << ", post C0C1";
     state_ = kHandShakeWaitS0S1;
     break;
   }
   case kHandShakePostC2: {
     RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-               << ", post C2\r\n";
+               << ", post C2";
     state_ = kHandShakeDone;
     break;
   }
   case kHandShakeDoning: {
     RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
-               << ", post C2\r\n";
+               << ", post C2";
     state_ = kHandShakeDone;
     break;
   }
@@ -234,7 +234,7 @@ void RtmpHandShake::createC2S2(const char *data, int bytes, int offset) {
 int32_t RtmpHandShake::checkC1S1(const char *data, int bytes) {
   if (bytes != kRtmpHandShakePacketSize + 1) {
     // length : C0/S1(1) + C1/S1(1536)
-    RTMP_ERROR << "unexpected C1S1, len = " << bytes << "bytes\r\n";
+    RTMP_ERROR << "unexpected C1S1, len = " << bytes << "bytes";
     return -1;
   }
   if (data[0] != '\x03') { // C0/S0 packet's version field

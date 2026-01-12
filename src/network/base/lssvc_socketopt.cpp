@@ -22,7 +22,7 @@ int LSSocketOpt::createNonblockingTcpSocket(int family) {
   int fd =
       ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
   if (fd < 0) {
-    NETWORK_ERROR << "Failed to create a nonblocking tcp socket\r\n";
+    NETWORK_ERROR << "Failed to create a nonblocking tcp socket";
   }
   return fd;
 }
@@ -31,7 +31,7 @@ int LSSocketOpt::createNonblockingUdpSocket(int family) {
   int fd =
       ::socket(family, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_UDP);
   if (fd < 0) {
-    NETWORK_ERROR << "Failed to create a nonblocking udp socket\r\n";
+    NETWORK_ERROR << "Failed to create a nonblocking udp socket";
   }
   return fd;
 }

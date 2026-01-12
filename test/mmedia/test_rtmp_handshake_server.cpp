@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
       // wait for client's Rtmp packet
       conn->setWriteCompleteCallback([&loop](const TcpConnectionPtr &conn){
-        NETWORK_INFO << "write complete host:" << conn->getPeerAddr().toIpWithPort() << "\r\n";
+        NETWORK_INFO << "write complete host:" << conn->getPeerAddr().toIpWithPort();
         RtmpHandShakePtr shake = conn->getContext<RtmpHandShake>(kNormalContext);
         shake->writeComplete();
       });

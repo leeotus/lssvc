@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
             con->forceClose();
           });
           conn->setTimeoutCallback(3, [](const TcpConnectionPtr &con) {
-            NETWORK_DEBUG << "time runs out!\r\n";
+            NETWORK_DEBUG << "time runs out!";
           });
           list.push_back(conn);
           loop->addEvent(conn);

@@ -11,7 +11,7 @@ LSSPipeEvent::LSSPipeEvent(LSSEventLoop *loop) : LSSEvent(loop) {
   int fd[2] = {0}; // pipe fd
   int ret = ::pipe2(fd, O_NONBLOCK);
   if (ret < 0) {
-    NETWORK_ERROR << "failed to open pipe\r\n";
+    NETWORK_ERROR << "failed to open pipe";
     exit(-1);
   }
   fd_ = fd[0];       // read end
@@ -29,7 +29,7 @@ void LSSPipeEvent::onRead() {
   int64_t tmp = 0;
   int ret = ::read(fd_, &tmp, sizeof(tmp));
   if (ret < 0) {
-    NETWORK_ERROR << "pipe read error(" << errno << ").\r\n";
+    NETWORK_ERROR << "pipe read error(" << errno << ").";
     return;
   }
   std::cout << " pipe read tmp:" << tmp << std::endl;
