@@ -1,14 +1,17 @@
 #include "mmedia/rtmp/rtmp_server.h"
 #include "mmedia/base/mmedia_logger.h"
 #include "mmedia/rtmp/rtmp_handshake.h"
+#include "mmedia/rtmp/rtmp_context.h"
 
 using namespace lssvc::mmedia;
+using namespace lssvc::utils;
+using namespace lssvc::network;
 
 RtmpServer::RtmpServer(network::LSSEventLoop *loop,
                        network::LSSInetAddress &local, RtmpHandler *handler)
     : TcpServer(loop, local), rtmp_handler_(handler) {}
 
-RtmpServer::~RtmpServer() {}
+RtmpServer::~RtmpServer() { stop(); }
 
 void RtmpServer::start() {
   TcpServer::setActiveCallback(
@@ -39,9 +42,9 @@ void RtmpServer::onNewConnection(const network::TcpConnectionPtr &conn) {
     rtmp_handler_->onNewConnection(conn);
   }
   // send RTMP handshake packet to the incoming connection
-  RtmpHandShakePtr shake = std::make_shared<RtmpHandShake>(conn, false);
-  conn->setContext(kRtmpContext, shake);
-  shake->start();
+  RtmpContextPtr ctx = std::make_shared<RtmpContext>(conn, nullptr, false);
+  conn->setContext(kRtmpContext, ctx);
+  ctx->startHandShake();
 }
 
 void RtmpServer::onDestroyed(const network::TcpConnectionPtr &conn) {
@@ -53,10 +56,9 @@ void RtmpServer::onDestroyed(const network::TcpConnectionPtr &conn) {
 
 void RtmpServer::onMessage(const network::TcpConnectionPtr &conn,
                            network::LSSMsgBuffer &buf) {
-  // TODO: receive RTMP packet from client
-  RtmpHandShakePtr shake = conn->getContext<RtmpHandShake>(kRtmpContext);
-  if (shake) {
-    int ret = shake->handShake(buf);
+  RtmpContextPtr ctx = conn->getContext<RtmpContext>(kRtmpContext);
+  if (ctx) {
+    int ret = ctx->parse(buf);
     if (ret == 0) {
       RTMP_TRACE << "host: " << conn->getPeerAddr().toIpWithPort()
                  << " handshake success";
@@ -68,9 +70,9 @@ void RtmpServer::onMessage(const network::TcpConnectionPtr &conn,
 }
 
 void RtmpServer::onWriteComplete(const network::ConnectionPtr &conn) {
-  RtmpHandShakePtr shake = conn->getContext<RtmpHandShake>(kRtmpContext);
-  if (shake) {
-    shake->writeComplete();
+  RtmpContextPtr ctx = conn->getContext<RtmpContext>(kRtmpContext);
+  if (ctx) {
+    ctx->onWriteComplete();
   }
 }
 void RtmpServer::onActive(const network::ConnectionPtr &conn) {

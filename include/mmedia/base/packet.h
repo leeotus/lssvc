@@ -76,7 +76,7 @@ public:
    * @tparam T the output type of extra-data
    */
   template <typename T> inline std::shared_ptr<T> getExt() const {
-    return static_cast<T>(ext_);
+    return std::static_pointer_cast<T>(ext_);
   }
 
   // @brief set the extra-data

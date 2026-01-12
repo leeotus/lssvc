@@ -100,8 +100,6 @@ bool verifyDigest(uint8_t *buf, int digest_pos, const uint8_t *key,
  */
 int32_t getDigestOffset(const uint8_t *buf, int off, int mod_val = 728);
 
-using namespace lssvc::network;
-
 // states of during a rtmp handshake
 enum RtmpHandShakeState {
   kHandShakeInit,
@@ -133,14 +131,14 @@ public:
    * @param conn [in] tcp connection (@note rtmp uses tcp)
    * @param client [in] whether the incoming connection is a client or not
    */
-  RtmpHandShake(const TcpConnectionPtr &conn, bool client=false);
+  RtmpHandShake(const network::TcpConnectionPtr &conn, bool client=false);
 
   ~RtmpHandShake() = default;
 
   // @brief start hand shaking
   void start();
 
-  int32_t handShake(LSSMsgBuffer &buf);
+  int32_t handShake(network::LSSMsgBuffer &buf);
 
   void writeComplete();
 
@@ -179,7 +177,7 @@ private:
   // @brief todo verify C2/S2 packet
   bool checkC2S2(const char *data, int bytes);
 
-  TcpConnectionPtr connection_;
+  network::TcpConnectionPtr connection_;
   // specify the current handshake is from the client or the server
   bool is_client_{false};
   bool is_complex_handshake_{

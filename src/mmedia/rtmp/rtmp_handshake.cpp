@@ -5,6 +5,7 @@
 #include <random>
 
 using namespace lssvc::mmedia;
+using namespace lssvc::network;
 
 namespace lssvc::mmedia {
 void calculateDigest(const uint8_t *src, int len, int gap, const uint8_t *key,
@@ -92,6 +93,7 @@ int32_t RtmpHandShake::handShake(LSSMsgBuffer &buf) {
       RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
                  << ", handshake done\r\n";
       state_ = kHandShakeDone; // server state 5
+      return 0;
     } else {
       RTMP_TRACE << "host:" << connection_->getPeerAddr().toIpWithPort()
                  << ", check C2 failed\r\n";

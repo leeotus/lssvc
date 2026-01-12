@@ -1,4 +1,5 @@
 #include "mmedia/base/mmedia_logger.h"
+#include "mmedia/rtmp/rtmp_context.h"
 #include "mmedia/rtmp/rtmp_handshake.h"
 #include "mmedia/rtmp/rtmp_server.h"
 #include "network/net/lssvc_eventloop.h"
