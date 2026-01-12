@@ -75,6 +75,7 @@ int32_t RtmpHandShake::handShake(LSSMsgBuffer &buf) {
       state_ = kHandShakePostS0S1;
       // create C2/S2 packet
       createC2S2(buf.peek() + 1, kRtmpHandShakePacketSize, offset);
+      buf.retrieve(kRtmpHandShakePacketSize + 1);
       sendC1S1(); // send S1 packet
     } else {
       // failed
