@@ -1,5 +1,6 @@
 #include "mmedia/rtmp/rtmp_context.h"
 #include "mmedia/base/bytes_reader.h"
+#include "mmedia/base/bytes_writer.h"
 #include "mmedia/base/mmedia_logger.h"
 #include "mmedia/rtmp/rtmp_handler.h"
 #include "mmedia/rtmp/rtmp_handshake.h"
@@ -204,5 +205,515 @@ int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
 
 void RtmpContext::messageComplete(PacketPtr &&data) {
   // TODO: parse audio & video data
-  RTMP_TRACE << "receive message type" << data->getPacketType() << ", length:" << data->getPacketSize();
+  RTMP_TRACE << "receive message type" << data->getPacketType()
+             << ", length:" << data->getPacketSize();
+  auto type = data->getPacketType();
+  switch (type) {
+  case kRtmpMsgTypeChunkSize: {
+    handleChunkSize(data);
+    break;
+  }
+  case kRtmpMsgTypeBytesRead: {
+    // TODO
+    RTMP_TRACE << "message bytes read received.";
+    break;
+  }
+  case kRtmpMsgTypeUserControl: {
+    handleUserMessage(data);
+    break;
+  }
+  case kRtmpMsgTypeWindowACKSize: {
+    handleAckWindowSize(data);
+    break;
+  }
+  default:
+    RTMP_ERROR << "not supported message type:" << type;
+    break;
+  }
+}
+
+bool RtmpContext::buildChunk(const PacketPtr &packet, uint32_t timestamp,
+                             bool fmt0) {
+  RtmpMsgHeaderPtr header = packet->getExt<RtmpMsgHeader>();
+  if (header) {
+    out_sending_packets_.emplace_back(packet);
+    RtmpMsgHeaderPtr &prev = out_message_headers_[header->cs_id];
+    bool use_delta = !fmt0 && !prev && timestamp >= prev->timestamp &&
+                     header->msg_sid == prev->msg_sid;
+    if (!prev) {
+      prev = std::make_shared<RtmpMsgHeader>();
+    }
+    int fmt = kRtmpFmt0;
+    if (use_delta) {
+      fmt = kRtmpFmt1;
+      timestamp -= prev->timestamp;
+      if (header->msg_type == prev->msg_type &&
+          header->msg_len == prev->msg_len) {
+        fmt = kRtmpFmt2;
+        if (timestamp == out_deltas_[header->cs_id]) {
+          fmt = kRtmpFmt3;
+        }
+      }
+    }
+
+    char *p = out_current_;
+    if (header->cs_id < 64) {
+      *p++ = (char)((fmt << 6) | header->cs_id);
+    } else if (header->cs_id < 64 + 256) {
+      *p++ = (char)((fmt << 6) | 0);
+      *p++ = (char)(header->cs_id - 64);
+    } else {
+      *p++ = (char)((fmt << 6) | 1);
+      uint16_t cs = header->cs_id - 64;
+      memcpy(p, &cs, sizeof(uint16_t));
+      p += sizeof(uint16_t);
+    }
+
+    auto ts = timestamp;
+    if (timestamp > 0xffffff) {
+      ts = 0xffffff;
+    }
+    if (fmt == kRtmpFmt0) {
+      p += BytesWriter::writeUint24T(p, ts);
+      p += BytesWriter::writeUint24T(p, header->msg_len);
+      p += BytesWriter::writeUint8T(p, header->msg_type);
+
+      memcpy(p, &header->msg_sid, 4);
+      p += 4;
+      out_deltas_[header->cs_id] = 0;
+    } else if (fmt == kRtmpFmt1) {
+      p += BytesWriter::writeUint24T(p, ts);
+      p += BytesWriter::writeUint24T(p, header->msg_len);
+      p += BytesWriter::writeUint8T(p, header->msg_type);
+      out_deltas_[header->cs_id] = timestamp;
+    } else if (fmt == kRtmpFmt2) {
+      p += BytesWriter::writeUint24T(p, ts);
+      out_deltas_[header->cs_id] = timestamp;
+    }
+
+    if (ts == 0xffffff) {
+      // extended timestamp
+      memcpy(p, &timestamp, 4);
+      p += 4;
+    }
+
+    BufferNodePtr node =
+        std::make_shared<BufferNode>(out_current_, p - out_current_);
+    sending_buffers_.emplace_back(std::move(node));
+    out_current_ = p;
+
+    prev->cs_id = header->cs_id;
+    prev->msg_len = header->msg_len;
+    prev->msg_sid = header->msg_sid;
+    prev->msg_type = header->msg_type;
+    if (fmt == kRtmpFmt0) {
+      prev->timestamp = timestamp;
+    } else {
+      prev->timestamp += timestamp;
+    }
+
+    const char *body = packet->data();
+    int32_t bytes_parsed = 0;
+    while (true) {
+      const char *chunk = body + bytes_parsed;
+      int32_t left = header->msg_len - bytes_parsed;
+      int32_t size = std::min(left, out_chunk_size_);
+
+      BufferNodePtr bfnode = std::make_shared<BufferNode>((void*)chunk, size);
+      sending_buffers_.emplace_back(std::move(bfnode));
+      bytes_parsed += size;
+
+      if (bytes_parsed < header->msg_len) {
+        if (out_current_ - out_buffer_ >= RTMP_BUFFER_SIZE) {
+          RTMP_ERROR << "RTMP buffer out of range";
+          break;
+        }
+        char *p = out_current_;
+
+        if (header->cs_id < 64) {
+          *p++ = (char)(0xC0 | header->cs_id);
+        } else if (header->cs_id < (64 + 256)) {
+          *p++ = (char)(0xC0 | 0);
+          *p++ = (char)(header->cs_id - 64);
+        } else {
+          *p++ = (char)(0xC0 | 1);
+          uint16_t cs = header->cs_id - 64;
+          memcpy(p, &cs, sizeof(uint16_t));
+          p += sizeof(uint16_t);
+        }
+        if (ts == 0xFFFFFF) {
+          memcpy(p, &timestamp, 4);
+          p += 4;
+        }
+
+        BufferNodePtr nheader =
+            std::make_shared<BufferNode>(out_current_, p - out_current_);
+        sending_buffers_.emplace_back(std::move(nheader));
+        out_current_ = p;
+      } else {
+        break;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+void RtmpContext::send() {
+  if(sending_) {
+    return;
+  }
+  sending_ = true;
+  for (int i = 0; i < RTMP_SINGLE_MAX; ++i) {
+    if (out_waiting_queue_.empty()) {
+      break;
+    }
+    PacketPtr pkt = std::move(out_waiting_queue_.front());
+    out_waiting_queue_.pop_front();
+
+    // build chunks and enqueue them into sending_buffers
+    buildChunk(std::move(pkt));
+  }
+  connection_->send(sending_buffers_);
+}
+
+bool RtmpContext::ready() const {
+  return !sending_;
+}
+
+bool RtmpContext::buildChunk(PacketPtr &&packet, uint32_t timestamp,
+                             bool fmt0) {
+  RtmpMsgHeaderPtr header = packet->getExt<RtmpMsgHeader>();
+  if(header) {
+    out_sending_packets_.emplace_back(std::move(packet));
+    RtmpMsgHeaderPtr &prev = out_message_headers_[header->cs_id];
+    bool use_delta = !fmt0 && !prev && timestamp >= prev->timestamp &&
+                     header->msg_sid == prev->msg_sid;
+    if(!prev) {
+      prev = std::make_shared<RtmpMsgHeader>();
+    }
+    int fmt = kRtmpFmt0;
+    if(use_delta) {
+      fmt = kRtmpFmt1;
+      timestamp -= prev->timestamp;
+      if(header->msg_type == prev->msg_type && header->msg_len == prev->msg_len) {
+        fmt = kRtmpFmt2;
+        if(timestamp == out_deltas_[header->cs_id]) {
+          fmt = kRtmpFmt3;
+        }
+      }
+    }
+
+    char *p = out_current_;
+    if(header->cs_id < 64) {
+      *p++ = (char)((fmt << 6) | header->cs_id);
+    } else if(header->cs_id < 64 + 256) {
+      *p++ = (char)((fmt << 6) | 0);
+      *p++ = (char)(header->cs_id - 64);
+    } else {
+      *p++ = (char)((fmt << 6) | 1);
+      uint16_t cs = header->cs_id - 64;
+      memcpy(p, &cs, sizeof(uint16_t));
+      p += sizeof(uint16_t);
+    }
+
+    auto ts = timestamp;
+    if(timestamp > 0xffffff) {
+      ts = 0xffffff;
+    }
+    if(fmt == kRtmpFmt0) {
+      p += BytesWriter::writeUint24T(p, ts);
+      p += BytesWriter::writeUint24T(p, header->msg_len);
+      p += BytesWriter::writeUint8T(p, header->msg_type);
+
+      memcpy(p, &header->msg_sid, 4);
+      p += 4;
+      out_deltas_[header->cs_id] = 0;
+    } else if(fmt == kRtmpFmt1) {
+      p += BytesWriter::writeUint24T(p, ts);
+      p += BytesWriter::writeUint24T(p, header->msg_len);
+      p += BytesWriter::writeUint8T(p, header->msg_type);
+      out_deltas_[header->cs_id] = timestamp;
+    } else if(fmt == kRtmpFmt2) {
+      p += BytesWriter::writeUint24T(p, ts);
+      out_deltas_[header->cs_id] = timestamp;
+    }
+
+    if(ts == 0xffffff) {
+      // extended timestamp
+      memcpy(p, &timestamp, 4);
+      p += 4;
+    }
+
+    BufferNodePtr node =
+        std::make_shared<BufferNode>(out_current_, p - out_current_);
+    sending_buffers_.emplace_back(std::move(node));
+    out_current_ = p;
+
+    prev->cs_id = header->cs_id;
+    prev->msg_len = header->msg_len;
+    prev->msg_sid = header->msg_sid;
+    prev->msg_type = header->msg_type;
+    if(fmt == kRtmpFmt0) {
+      prev->timestamp = timestamp;
+    } else {
+      prev->timestamp += timestamp;
+    }
+
+    const char *body = packet->data();
+    int32_t bytes_parsed = 0;
+    while(true) {
+      const char *chunk = body + bytes_parsed;
+      int32_t left = header->msg_len - bytes_parsed;
+      int32_t size = std::min(left, out_chunk_size_);
+
+      BufferNodePtr bfnode = std::make_shared<BufferNode>((void*)chunk, size);
+      sending_buffers_.emplace_back(std::move(bfnode));
+      bytes_parsed += size;
+
+      if (bytes_parsed < header->msg_len) {
+        if (out_current_ - out_buffer_ >= RTMP_BUFFER_SIZE) {
+          RTMP_ERROR << "RTMP buffer out of range";
+          break;
+        }
+        char *p = out_current_;
+
+        if (header->cs_id < 64) {
+          *p++ = (char)(0xC0 | header->cs_id);
+        } else if (header->cs_id < (64 + 256)) {
+          *p++ = (char)(0xC0 | 0);
+          *p++ = (char)(header->cs_id - 64);
+        } else {
+          *p++ = (char)(0xC0 | 1);
+          uint16_t cs = header->cs_id - 64;
+          memcpy(p, &cs, sizeof(uint16_t));
+          p += sizeof(uint16_t);
+        }
+        if (ts == 0xFFFFFF) {
+          memcpy(p, &timestamp, 4);
+          p += 4;
+        }
+
+        BufferNodePtr nheader =
+            std::make_shared<BufferNode>(out_current_, p - out_current_);
+        sending_buffers_.emplace_back(std::move(nheader));
+        out_current_ = p;
+      } else {
+        break;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+void RtmpContext::checkAndSend() {
+  sending_ = false;
+  out_current_ = out_buffer_;
+  sending_buffers_.clear();
+  out_sending_packets_.clear();
+
+  if(!out_waiting_queue_.empty()) {
+    send();
+  } else {
+    if(rtmp_handler_) {
+      rtmp_handler_->onActive(connection_);
+    }
+  }
+}
+void RtmpContext::pushOutQueue(PacketPtr &&packet) {
+  out_waiting_queue_.emplace_back(std::move(packet));
+  send();
+}
+
+void RtmpContext::sendSetChunkSize() {
+  PacketPtr pkt = Packet::newPacket2(64);
+  RtmpMsgHeaderPtr header = std::make_shared<RtmpMsgHeader>();
+  if(header) {
+    header->cs_id = kRtmpCSIDCommand;
+    header->msg_len = 0;
+    header->msg_type = kRtmpMsgTypeChunkSize;
+    header->timestamp = 0;
+    header->msg_sid = kRtmpMsID0;
+    pkt->setExt(header);
+  }
+  char *body = pkt->data();
+  header->msg_len = BytesWriter::writeUint32T(body, out_chunk_size_);
+  pkt->setPacketSize(header->msg_len);
+  RTMP_DEBUG << "send chunk size: " << out_chunk_size_
+             << " to host:" << connection_->getPeerAddr().toIpWithPort();
+  pushOutQueue(std::move(pkt));
+}
+
+void RtmpContext::sendAckWindowSize() {
+  PacketPtr pkt = Packet::newPacket2(64);
+  RtmpMsgHeaderPtr header = std::make_shared<RtmpMsgHeader>();
+  if(header) {
+    header->cs_id = kRtmpCSIDCommand;
+    header->msg_len = 0;
+    header->msg_type = kRtmpMsgTypeWindowACKSize;
+    header->timestamp = 0;
+    header->msg_sid = kRtmpMsID0;
+    pkt->setExt(header);
+  }
+  char *body = pkt->data();
+  header->msg_len = BytesWriter::writeUint32T(body, ack_size_);
+  pkt->setPacketSize(header->msg_len);
+  RTMP_DEBUG << "send ack size" << ack_size_ << " to host:" << connection_->getPeerAddr().toIpWithPort();
+  pushOutQueue(std::move(pkt));
+}
+
+void RtmpContext::sendSetPeerBandwidth() {
+  PacketPtr pkt = Packet::newPacket2(64);
+  RtmpMsgHeaderPtr header = std::make_shared<RtmpMsgHeader>();
+  if(header) {
+    header->cs_id = kRtmpCSIDCommand;
+    header->msg_len = 0;
+    header->msg_type = kRtmpMsgTypeSetPeerBW;
+    header->timestamp = 0;
+    header->msg_sid = kRtmpMsID0;
+    pkt->setExt(header);
+  }
+
+  char *body = pkt->data();
+  body += BytesWriter::writeUint32T(body, ack_size_);
+  *body++ = 0x02;
+  pkt->setPacketSize(5);
+  RTMP_DEBUG << "send bandwidth:" << ack_size_ << " to host:" << connection_->getPeerAddr().toIpWithPort();
+  pushOutQueue(std::move(pkt));
+}
+
+void RtmpContext::sendBytesRecv() {
+  if(in_bytes_ >= ack_size_) {
+    PacketPtr pkt = Packet::newPacket2(64);
+    RtmpMsgHeaderPtr header = std::make_shared<RtmpMsgHeader>();
+    if(header) {
+      header->cs_id = kRtmpCSIDCommand;
+      header->msg_len = 0;
+      header->msg_type = kRtmpMsgTypeBytesRead;
+      header->timestamp = 0;
+      header->msg_sid = kRtmpMsID0;
+      pkt->setExt(header);
+    }
+    char *body = pkt->data();
+    header->msg_len = BytesWriter::writeUint32T(body, in_bytes_);
+    pkt->setPacketSize(header->msg_len);
+    pushOutQueue(std::move(pkt));
+    in_bytes_ = 0;
+  }
+}
+
+void RtmpContext::sendUserCtrlMessage(short nType, uint32_t value1, uint32_t value2) {
+  PacketPtr pkt = Packet::newPacket2(64);
+  RtmpMsgHeaderPtr header = std::make_shared<RtmpMsgHeader>();
+  if(header) {
+    header->cs_id = kRtmpCSIDCommand;
+    header->msg_len = 0;
+    header->msg_type = kRtmpMsgTypeUserControl;
+    header->timestamp = 0;
+    header->msg_sid = kRtmpMsID0;
+    pkt->setExt(header);
+  }
+  char *body = pkt->data();
+  char *p = body;
+  p += BytesWriter::writeUint16T(body, nType);
+  p += BytesWriter::writeUint32T(body, value1);
+  if(nType == kRtmpEventTypeSetBufferLength) {
+    p += BytesWriter::writeUint32T(body, value2);
+  }
+  pkt->setPacketSize(header->msg_len);
+  RTMP_DEBUG << "send user control type:" << nType << " value:" << value1
+             << ", value2:" << value2
+             << " to host:" << connection_->getPeerAddr().toIpWithPort();
+  pushOutQueue(std::move(pkt));
+}
+
+void RtmpContext::handleChunkSize(PacketPtr &pkt) {
+  if(pkt->getPacketSize() >= 4) {
+    auto size = BytesReader::readUint32T(pkt->data());
+    RTMP_DEBUG << "receive chunk size in_chunk_size:" << in_chunk_size_
+               << " update to " << size;
+    in_chunk_size_ = size;  // update chunk size
+  } else {
+    RTMP_ERROR << "invalid chunk size packet msg_len:" << pkt->getPacketSize()
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+  }
+}
+
+void RtmpContext::handleAckWindowSize(PacketPtr &pkt) {
+  if(pkt->getPacketSize() >= 4) {
+    auto size = BytesReader::readUint32T(pkt->data());
+    RTMP_DEBUG << "receive ack window size ack_size_" << ack_size_ << " update to " << size;
+    ack_size_ = size; // update ack window size
+  } else {
+    RTMP_ERROR << "invalid ack window size packet msg_len:"
+               << pkt->getPacketSize()
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+  }
+}
+
+void RtmpContext::handleUserMessage(PacketPtr &pkt) {
+  auto len = pkt->getPacketSize();
+  if (len < 6) {
+    // error occurs
+    RTMP_ERROR << "invalid user control packet msg_len: "
+               << pkt->getPacketSize();
+    return;
+  }
+
+  char *body = pkt->data();                   // get the packet
+  auto type = BytesReader::readUint16T(body); // read the first 2 bytes
+  auto value = BytesReader::readUint32T(body + 2);
+
+  // log
+  RTMP_TRACE << "receive user control type: " << type << " value" << value
+             << " host:" << connection_->getPeerAddr().toIpWithPort();
+
+  // TODO
+  switch (type) {
+  case kRtmpEventTypeStreamBegin: {
+    RTMP_TRACE << "recv stream begin value" << value
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+    break;
+  }
+  case kRtmpEventTypeStreamEOF: {
+    RTMP_TRACE << "recv stream eof value" << value
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+    break;
+  }
+  case kRtmpEventTypeStreamDry: {
+    RTMP_TRACE << "recv stream dry value" << value
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+    break;
+  }
+  case kRtmpEventTypeSetBufferLength: {
+    RTMP_TRACE << "recv set buffer length value" << value
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+    if (len < 10) {
+      RTMP_ERROR << "invalid user control packet msg_len:"
+                 << pkt->getPacketSize()
+                 << " host:" << connection_->getPeerAddr().toIpWithPort();
+      return;
+    }
+    break;
+  }
+  case kRtmpEventTypeStreamsRecorded: {
+    RTMP_TRACE << "recv stream recoded value" << value
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+    break;
+  }
+  case kRtmpEventTypePingRequest: {
+    RTMP_TRACE << "recv ping request value" << value
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+    sendUserCtrlMessage(kRtmpEventTypePingResponse, value, 0);
+    break;
+  }
+  case kRtmpEventTypePingResponse: {
+    RTMP_TRACE << "recv ping response value" << value
+               << " host:" << connection_->getPeerAddr().toIpWithPort();
+    break;
+  }
+  default:
+    break;
+  }
 }
