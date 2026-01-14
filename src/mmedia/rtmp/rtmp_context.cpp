@@ -2,6 +2,7 @@
 #include "mmedia/base/bytes_reader.h"
 #include "mmedia/base/bytes_writer.h"
 #include "mmedia/base/mmedia_logger.h"
+#include "mmedia/rtmp/amf/amf_object.h"
 #include "mmedia/rtmp/rtmp_handler.h"
 #include "mmedia/rtmp/rtmp_handshake.h"
 
@@ -13,13 +14,13 @@ RtmpContext::RtmpContext(const network::TcpConnectionPtr &conn,
     : handshake_(conn, client), connection_(conn), rtmp_handler_(handler) {}
 
 int32_t RtmpContext::parse(LSSMsgBuffer &buf) {
-  int ret = 0;
+  int32_t ret = 0;
   if (state_ == kRtmpHandShake) {
     ret = handshake_.handShake(buf);
     if (ret == 0) {
       state_ = kRtmpMessage;
       if (buf.readableBytes() > 0) {
-        parse(buf); // recursivly parse buffer
+        return parse(buf); // recursivly parse buffer
       }
     } else if (ret == -1) {
       RTMP_ERROR << "rtmp handshake error";
@@ -27,7 +28,9 @@ int32_t RtmpContext::parse(LSSMsgBuffer &buf) {
       state_ = kRtmpWaitingDone;
     }
   } else if (state_ == kRtmpMessage) {
-    return parseMessage(buf);
+    auto r = parseMessage(buf);
+    last_left_ = buf.readableBytes();
+    return r;
   }
   return ret;
 }
@@ -38,7 +41,7 @@ void RtmpContext::onWriteComplete() {
   } else if (state_ == kRtmpWaitingDone) {
     state_ = kRtmpMessage;
   } else if (state_ == kRtmpMessage) {
-    // TODO
+    checkAndSend();
   }
 }
 
@@ -51,6 +54,9 @@ int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
   uint32_t csid = 0;
   uint32_t parsed = 0;
   uint32_t total_bytes = buf.readableBytes();
+
+  in_bytes_ += (buf.readableBytes() - last_left_);
+  sendBytesRecv();
 
   while(total_bytes > 1) {
     const char *pos = buf.peek();
@@ -226,6 +232,14 @@ void RtmpContext::messageComplete(PacketPtr &&data) {
     handleAckWindowSize(data);
     break;
   }
+  case kRtmpMsgTypeAMF3Message: {
+    handleAmfCommand(data, true);
+    break;
+  }
+  case kRtmpMsgTypeAMFMessage: {
+    handleAmfCommand(data);
+    break;
+  }
   default:
     RTMP_ERROR << "not supported message type:" << type;
     break;
@@ -341,7 +355,7 @@ bool RtmpContext::buildChunk(const PacketPtr &packet, uint32_t timestamp,
           memcpy(p, &cs, sizeof(uint16_t));
           p += sizeof(uint16_t);
         }
-        if (ts == 0xFFFFFF) {
+        if (ts == 0xffffff) {
           memcpy(p, &timestamp, 4);
           p += 4;
         }
@@ -489,7 +503,7 @@ bool RtmpContext::buildChunk(PacketPtr &&packet, uint32_t timestamp,
           memcpy(p, &cs, sizeof(uint16_t));
           p += sizeof(uint16_t);
         }
-        if (ts == 0xFFFFFF) {
+        if (ts == 0xffffff) {
           memcpy(p, &timestamp, 4);
           p += 4;
         }
@@ -521,6 +535,7 @@ void RtmpContext::checkAndSend() {
     }
   }
 }
+
 void RtmpContext::pushOutQueue(PacketPtr &&packet) {
   out_waiting_queue_.emplace_back(std::move(packet));
   send();
@@ -717,3 +732,22 @@ void RtmpContext::handleUserMessage(PacketPtr &pkt) {
     break;
   }
 }
+
+void RtmpContext::handleAmfCommand(PacketPtr &pkt, bool amf3) {
+  RTMP_TRACE << "amf message len:" << pkt->getPacketSize()
+             << " host:" << connection_->getPeerAddr().toIpWithPort();
+
+  const char *body = pkt->data();
+  int32_t msg_len = pkt->getPacketSize();
+  if(amf3) {
+    body += 1;
+    msg_len -= 1;
+  }
+  AMFObject obj;
+  if(obj.decode(body, msg_len) < 0) {
+    RTMP_ERROR << "amf decode failed. host:" << connection_->getPeerAddr().toIpWithPort();
+    return;
+  }
+  obj.dump();
+}
+

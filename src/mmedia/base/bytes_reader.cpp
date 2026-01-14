@@ -1,8 +1,18 @@
 #include "mmedia/base/bytes_reader.h"
 #include <cstdint>
 #include <netinet/in.h>
+#include <cstring>
 
 using namespace lssvc::mmedia;
+
+uint64_t BytesReader::readUint64T(const char *data) {
+  uint64_t in = *((uint64_t *)data);
+  uint64_t res = __bswap_64(in);
+  double value;
+  memcpy(&value, &res, sizeof(double));
+  return value;
+
+}
 
 uint32_t BytesReader::readUint32T(const char *data) {
   uint32_t *c = (uint32_t *)data;

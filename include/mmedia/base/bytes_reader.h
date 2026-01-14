@@ -10,6 +10,7 @@ public:
   BytesReader() = default;
   ~BytesReader() = default;
 
+  static uint64_t readUint64T(const char *data);
   static uint32_t readUint32T(const char *data);
   static uint32_t readUint24T(const char *data);
   static uint16_t readUint16T(const char *data);

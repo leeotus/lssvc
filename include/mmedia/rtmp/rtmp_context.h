@@ -127,6 +127,13 @@ private:
    */
   void handleUserMessage(PacketPtr &pkt);
 
+  /**
+   * @brief handle AMF/AMF3 message
+   * @param pkt [in] the packet containing AMF/AMF3 message
+   * @param amf3 [in] whether it is AMF3 or not
+   */
+  void handleAmfCommand(PacketPtr &pkt, bool amf3 = false);
+
   RtmpHandShake handshake_;
   int32_t state_{kRtmpHandShake};
   network::TcpConnectionPtr connection_;
