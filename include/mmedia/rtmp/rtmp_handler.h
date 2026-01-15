@@ -23,6 +23,8 @@ public:
   virtual void onPause(const network::TcpConnectionPtr &conn, bool pause) = 0;
 
   virtual void onSeek(const network::TcpConnectionPtr &conn, double time) = 0;
+
+  virtual void onPublishPrepare(const network::TcpConnectionPtr &conn) = 0;
 };
 
 } // namespace lssvc::mmedia
