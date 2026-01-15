@@ -31,7 +31,7 @@ public:
    * @param data [in] the parsed data
    */
   virtual void onRecv(const network::TcpConnectionPtr &conn,
-                      PacketPtr &data) = 0;
+                      const PacketPtr &data) = 0;
   virtual void onRecv(const network::TcpConnectionPtr &conn,
                       PacketPtr &&data) = 0;
 

@@ -44,8 +44,11 @@ std::vector<std::string> LSSString::split(const std::string &s,
   size_t last = 0;
   size_t next = 0;
   while ((next = s.find(delim, last)) != std::string::npos) {
-    if (next > last || acceptEmpty)
+    if (next > last || acceptEmpty) {
       v.push_back(s.substr(last, next - last));
+    } else {
+      v.emplace_back("");
+    }
     last = next + delim.length();
   }
   if (s.length() > last || acceptEmpty)

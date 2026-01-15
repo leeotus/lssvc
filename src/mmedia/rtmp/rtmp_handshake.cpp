@@ -118,9 +118,12 @@ int32_t RtmpHandShake::handShake(LSSMsgBuffer &buf) {
 
       if (buf.readableBytes() == kRtmpHandShakePacketSize) { // S2
         // S2 packet has come, no need to wait for it
+        RTMP_TRACE << "host" << connection_->getPeerAddr().toIpWithPort()
+                   << ", received S2\r\n";
         state_ = kHandShakeDoning;
+        buf.retrieve(kRtmpHandShakePacketSize);
         sendC2S2();
-        return 2;
+        return 0;
       } else {
         state_ = kHandShakePostC2;
         sendC2S2();
