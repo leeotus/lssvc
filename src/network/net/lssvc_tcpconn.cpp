@@ -23,6 +23,7 @@ void LSSTcpConnection::onRead() {
                   << "had close\r\n";
     return;
   }
+  extendLife();
   while (true) {
     int err;
 
@@ -78,6 +79,7 @@ void LSSTcpConnection::onWrite() {
                   << " had closed.";
     return;
   }
+  extendLife();
   if (!io_vec_list_.empty()) {
     while (true) {
       auto ret = ::writev(fd_, &io_vec_list_[0], io_vec_list_.size());
@@ -146,6 +148,7 @@ void LSSTcpConnection::enableCheckIdleTimeout(int32_t max_time) {
   loop_->insertEntry(max_time, tp);
 }
 
+// @TODO improve this function, it may cause many entries inserted into the timewheel
 void LSSTcpConnection::extendLife() {
   auto tp = timeout_entry_.lock();
   if (tp) {

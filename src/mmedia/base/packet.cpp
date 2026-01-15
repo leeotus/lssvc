@@ -10,7 +10,6 @@ Packet::Packet(uint32_t size)
 Packet::~Packet() {}
 
 PacketPtr Packet::newPacket(uint32_t size) {
-  // @TODO use vector (placement new) instead
   auto block_size = size + sizeof(Packet);
   Packet *pkt = (Packet *)new char[block_size];
   memset((void *)pkt, 0, block_size);

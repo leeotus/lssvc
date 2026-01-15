@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#define DEFAULT_PACKET_SIZE 1024
+
 namespace lssvc::mmedia {
 
 // @brief different packet & frame types

@@ -1,10 +1,11 @@
 #ifndef __RTMP_CONTEXT_H__
 #define __RTMP_CONTEXT_H__
 
+#include "amf/amf_object.h"
 #include "mmedia/base/packet.h"
 #include "network/base/lssvc_msgbuffer.h"
-#include "network/net/lssvc_tcpconn.h"
 #include "network/net/lssvc_connection.h"
+#include "network/net/lssvc_tcpconn.h"
 #include "rtmp_handler.h"
 #include "rtmp_handshake.h"
 #include "rtmp_header.h"
@@ -15,6 +16,7 @@
 
 #define RTMP_BUFFER_SIZE 4096
 #define RTMP_SINGLE_MAX 10
+#define RTMP_APP_INDEX 2
 
 namespace lssvc::mmedia {
 
@@ -34,6 +36,8 @@ enum RtmpEventType {
   kRtmpEventTypePingRequest,
   kRtmpEventTypePingResponse,
 };
+
+using CommandFunc = std::function<void(AMFObject &)>;
 
 class RtmpContext {
 public:
@@ -75,6 +79,12 @@ public:
 
   bool ready() const;
 
+  // @brief for rtmp client, send "play"
+  void play(const std::string &url);
+
+  // @brief for rtmp client, send "publish"
+  void publish(const std::string &url);
+
 private:
   // @see "buildChunk(public)"
   bool buildChunk(PacketPtr &&packet, uint32_t timestamp = 0, bool fmt0 = false);
@@ -109,6 +119,22 @@ private:
    */
   void sendUserCtrlMessage(short nType, uint32_t value1, uint32_t value2);
 
+  // @brief send "connect" command
+  void sendConnect();
+
+  // @brief send "createStream" command
+  void sendCreateStream();
+
+  // @brief send "onStatus" command
+  void sendStatus(const std::string &level, const std::string &code,
+                  const std::string &desc);
+
+  // @brief send "play" command
+  void sendPlay();
+
+  // @brief send "publish" command
+  void sendPublish();
+
   /**
    * @brief handle incoming message (set chunk size)
    * @param pkt [in] the incoming packet containing message
@@ -133,6 +159,41 @@ private:
    * @param amf3 [in] whether it is AMF3 or not
    */
   void handleAmfCommand(PacketPtr &pkt, bool amf3 = false);
+
+  /**
+   * @brief handle peer connection's "connect" command
+   * @param obj [in] AMF-packaged "connect" command
+   */
+  void handleConnect(AMFObject &obj);
+
+  /**
+   * @brief handle peer connection's "createStream" command
+   * @param obj [in] AMF-packaged "createStream" command
+   */
+  void handleCreateStream(AMFObject &obj);
+
+  /**
+   * @brief handle peer connections' "play" command
+   * @param obj [in] AMF-packaged "play" command
+   */
+  void handlePlay(AMFObject &obj);
+
+  // @brief parse incoming message to get the "name" and the "tcUrl" value
+  void parseNameAndTcUrl();
+
+  /**
+   * @brief handle peer connections' "publish" command
+   * @param obj [in] AMF-packaged "publish" command
+   */
+  void handlePublish(AMFObject &obj);
+
+  // @brief handle "_result"
+  void handleResult(AMFObject &obj);
+
+  // @brief handle "_error"
+  void handleError(AMFObject &obj);
+
+  void setPacketType(PacketPtr &pkt);
 
   RtmpHandShake handshake_;
   int32_t state_{kRtmpHandShake};
@@ -180,6 +241,17 @@ private:
   int32_t in_bytes_{0};
 
   int32_t last_left_{0};
+
+  std::string app_;
+  std::string tc_url_;
+  std::string name_;
+  std::string session_name_;
+  std::string param_;
+  bool is_player_{false};
+
+  std::unordered_map<std::string, CommandFunc> commands_;
+
+  bool is_client_{false};
 };
 
 using RtmpContextPtr = std::shared_ptr<RtmpContext>;

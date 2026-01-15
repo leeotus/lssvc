@@ -58,9 +58,9 @@ public:
   static int32_t encodeNumber(char *output, double val);
   static int32_t encodeString(char *output, const std::string &str);
   static int32_t encodeBoolean(char *output, bool b);
-  static int32_t encodeNameNumber(char *output, const std::string &name, double val);
-  static int32_t encodeNameString(char *output, const std::string &name, const std::string &val);
-  static int32_t encodeNameBoolean(char *output, const std::string &name, bool val);
+  static int32_t encodeNamedNumber(char *output, const std::string &name, double val);
+  static int32_t encodeNamedString(char *output, const std::string &name, const std::string &val);
+  static int32_t encodeNamedBoolean(char *output, const std::string &name, bool val);
 
 protected:
   static int encodeName(char *buf, const std::string &name);

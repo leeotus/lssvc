@@ -8,7 +8,7 @@
 using namespace lssvc::mmedia;
 
 namespace {
-static std::string empty_string{};
+static std::string empty_string;
 }
 
 AMFAny::AMFAny(const std::string &name) : name_(name) {}
@@ -94,7 +94,7 @@ int32_t AMFAny::encodeNumber(char *output, double val) {
   char *p = output;
 
   *p++ = kAMFNumber;
-  p += writeNumber(output, val);
+  p += writeNumber(p, val);
   return p - output;
 }
 
@@ -118,13 +118,6 @@ int32_t AMFAny::encodeBoolean(char *output, bool b) {
   return p - output;
 }
 
-int32_t AMFAny::encodeNameNumber(char *output, const std::string &name, double val) {
-  char *old = output;
-  output += encodeName(output, name);
-  output += encodeNumber(output, val);
-  return output - old;
-}
-
 int AMFAny::encodeName(char *buf, const std::string &name) {
   // char *old = buf;
   auto len = name.size();
@@ -137,14 +130,21 @@ int AMFAny::encodeName(char *buf, const std::string &name) {
   return len + 2;
 }
 
-int32_t AMFAny::encodeNameString(char *output, const std::string &name, const std::string &val) {
+int32_t AMFAny::encodeNamedNumber(char *output, const std::string &name, double val) {
+  char *old = output;
+  output += encodeName(output, name);
+  output += encodeNumber(output, val);
+  return output - old;
+}
+
+int32_t AMFAny::encodeNamedString(char *output, const std::string &name, const std::string &val) {
   char *old = output;
   output += encodeName(output, name);
   output += encodeString(output, val);
   return output - old;
 }
 
-int32_t AMFAny::encodeNameBoolean(char *output, const std::string &name, bool val) {
+int32_t AMFAny::encodeNamedBoolean(char *output, const std::string &name, bool val) {
   char *old = output;
   output += encodeName(output, name);
   output += encodeBoolean(output, val);
