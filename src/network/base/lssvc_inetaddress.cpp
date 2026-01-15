@@ -24,7 +24,7 @@ int LSSInetAddress::getIpAndPort(const std::string &host, std::string &ip,
     port = ret[1];
     return 0;
   }
-  NETWORK_ERROR << "No input ip address and port, please check.\r\n";
+  NETWORK_ERROR << "No input ip address and port, please check.";
   return -1;
 }
 
@@ -117,7 +117,7 @@ uint32_t LSSInetAddress::IPv4(const char *ip) const {
   addr_in.sin_family = AF_INET;
   addr_in.sin_port = 0;
   if (::inet_pton(AF_INET, ip, &addr_in.sin_addr) < 0) {
-    NETWORK_ERROR << "ipv4 ip: " << ip << "convert failed.\r\n";
+    NETWORK_ERROR << "ipv4 ip: " << ip << "convert failed.";
   }
 
   // convert network byte order to host byte one for the

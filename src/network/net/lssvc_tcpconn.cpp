@@ -23,8 +23,11 @@ void LSSTcpConnection::onRead() {
                   << "had close\r\n";
     return;
   }
+  extendLife();
   while (true) {
     int err;
+
+    // read data from the client
     auto ret = message_buffer_.readFd(fd_, &err);
     if (ret > 0) {
       if (message_cb_) {
@@ -61,7 +64,7 @@ void LSSTcpConnection::onClose() {
 
 void LSSTcpConnection::onError(const std::string &errmsg) {
   NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                << " , error:" << errmsg << "\r\n";
+                << " , error:" << errmsg;
   onClose();
 }
 
@@ -73,9 +76,10 @@ void LSSTcpConnection::onWrite() {
   if (closed_.load()) {
     // already close
     NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                  << " had closed.\r\n";
+                  << " had closed.";
     return;
   }
+  extendLife();
   if (!io_vec_list_.empty()) {
     while (true) {
       auto ret = ::writev(fd_, &io_vec_list_[0], io_vec_list_.size());
@@ -131,7 +135,7 @@ void LSSTcpConnection::setTimeoutCallback(int timeout, TimeoutCallback &&cb) {
 void LSSTcpConnection::onTimeout() {
   // prevent TCP connections from occupying resources
   NETWORK_TRACE << "host: " << getPeerAddr().toIpWithPort()
-                << " timeout and close it.\r\n";
+                << " timeout and close it.";
   onClose();
 }
 
@@ -144,6 +148,7 @@ void LSSTcpConnection::enableCheckIdleTimeout(int32_t max_time) {
   loop_->insertEntry(max_time, tp);
 }
 
+// @TODO improve this function, it may cause many entries inserted into the timewheel
 void LSSTcpConnection::extendLife() {
   auto tp = timeout_entry_.lock();
   if (tp) {
@@ -164,7 +169,7 @@ void LSSTcpConnection::sendInLoop(std::list<BufferNodePtr> &list) {
   if (closed_.load()) {
     // already close
     NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                  << " had closed.\r\n";
+                  << " had closed.";
     return;
   }
   for (auto &l : list) {
@@ -183,7 +188,7 @@ void LSSTcpConnection::sendInLoop(const char *buf, size_t size) {
   if (closed_.load()) {
     // already close
     NETWORK_ERROR << "host: " << getPeerAddr().toIpWithPort()
-                  << " had closed.\r\n";
+                  << " had closed.";
     return;
   }
   size_t send_len = 0;

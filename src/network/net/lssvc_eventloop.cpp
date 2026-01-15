@@ -22,7 +22,7 @@ LSSEventLoop::LSSEventLoop()
     : epoll_fd_(-1), epoll_events_(LSS_EPOLLEVENTS_MAXSIZE) {
   epoll_fd_ = ::epoll_create1(0);
   if (epoll_fd_ == -1) {
-    NETWORK_ERROR << "Failed to initialize EventLoop!\r\n";
+    NETWORK_ERROR << "Failed to initialize EventLoop!";
     exit(-1);
   }
 
@@ -30,7 +30,7 @@ LSSEventLoop::LSSEventLoop()
   // epoll_events_.clear();
 
   if (t_local_eventloop != nullptr) {
-    NETWORK_ERROR << "there already had an eventloop.\r\n";
+    NETWORK_ERROR << "there already had an eventloop.";
     exit(-1);
   }
   t_local_eventloop = this;
@@ -55,8 +55,7 @@ void LSSEventLoop::addEvent(const LSSEventPtr &event) {
   int ret = epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, event->getFd(), &ev); // add
   if (ret == -1) {
     // error occurs
-    NETWORK_ERROR << "Failed to add file description: " << event->getFd()
-                  << "\r\n";
+    NETWORK_ERROR << "Failed to add file description: " << event->getFd();
   }
 }
 
@@ -79,7 +78,7 @@ void LSSEventLoop::delEvent(const LSSEventPtr &event) {
 
 bool LSSEventLoop::enableReading(const LSSEventPtr &event, bool en) {
   if (events_.find(event->getFd()) == events_.end()) {
-    NETWORK_ERROR << "Can't find event fd: " << event->getFd() << "\r\n";
+    NETWORK_ERROR << "Can't find event fd: " << event->getFd();
     return false;
   }
   if (en) {
@@ -97,7 +96,7 @@ bool LSSEventLoop::enableReading(const LSSEventPtr &event, bool en) {
 
 bool LSSEventLoop::enableWriting(const LSSEventPtr &event, bool en) {
   if (events_.find(event->getFd()) == events_.end()) {
-    NETWORK_ERROR << "Can't find event fd: " << event->getFd() << "\r\n";
+    NETWORK_ERROR << "Can't find event fd: " << event->getFd();
     return false;
   }
   if (en) {
@@ -159,7 +158,7 @@ void LSSEventLoop::loop(int timeout) {
       wheel_.onTimer(now);
 
     } else if (nready < 0) {
-      NETWORK_ERROR << "epoll wait meets an error: " << errno << "\r\n";
+      NETWORK_ERROR << "epoll wait meets an error: " << errno;
     }
   }
 }
@@ -188,7 +187,7 @@ void LSSEventLoop::enqueueTask(std::function<void()> &&f) {
 
 void LSSEventLoop::checkInLoopThread() {
   if (!isInLoopThread()) {
-    NETWORK_ERROR << "It is forbidden to run loop on other thread.\r\n";
+    NETWORK_ERROR << "It is forbidden to run loop on other thread.";
     exit(-1);
   }
 }

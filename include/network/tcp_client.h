@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <list>
+#include <memory>
 
 namespace lssvc {
 namespace network {
@@ -72,6 +73,8 @@ private:
   int status_{kTcpConnStatusInit};
   ConnectionCallback connected_cb_;
 };
+
+using TcpClientPtr = std::shared_ptr<TcpClient>;
 
 } // namespace network
 } // namespace lssvc
