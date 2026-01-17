@@ -46,3 +46,4 @@ log/
 
 # clangd
 /.cache
+/config

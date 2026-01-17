@@ -10,6 +10,8 @@ using namespace lssvc::utils;
 
 static thread_local pid_t thread_id = 0;
 
+LSSLogger *lssvc::utils::local_logger = nullptr;
+
 const std::string RED = "\033[31m";
 const std::string GREEN = "\033[32m";
 const std::string YELLOW = "\033[33m";
@@ -42,9 +44,14 @@ LSSLogStream::LSSLogStream(LSSLogger *logger, const char *file,
   stream_ << thread_id;
   stream_ << level_colors[level] << log_string[level];
   stream_ << "[" << file_name << ":" << line << "]" << RESET;
+  if(func) {
+    stream_ << level_colors[level] << "[" << func << "]" << RESET;
+  }
 }
 
 LSSLogStream::~LSSLogStream() {
   stream_ << "\r\n";
-  logger_->write(stream_.str());
+  if(logger_) {
+    logger_->write(stream_.str());
+  }
 }

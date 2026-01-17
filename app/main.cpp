@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdio.h>
+#include <memory>
 #include <thread>
 
 #include "utils/lssvc_config.h"
@@ -11,8 +12,12 @@
 using namespace lssvc::utils;
 
 int main(int argc, char **argv) {
+  // g_lsslogger->setLogLevel(kTrace);
+  local_logger = new LSSLogger();
+  local_logger->setLogLevel(kTrace);
+
   // @todo pass the config.json path through argv
-  if (!g_config_mgr->loadConfig("./config.json")) {
+  if (!g_config_mgr->loadConfig("./config/config.json")) {
     std::cerr << "load config file failed\r\n";
     return -1;
   }
@@ -29,13 +34,27 @@ int main(int argc, char **argv) {
     std::cerr << "log can't open\r\n";
     return -1;
   }
-
   log->setRotate(log_info->rotate_type);
-  g_lsslogger->setLogLevel(log_info->level);
+  delete local_logger;
+  local_logger = nullptr;
+  local_logger = new LSSLogger(log);
+
+  // g_lsslogger->setLogLevel(log_info->level);
+
+  LSSTaskPtr task4 = std::make_shared<LSSTask>(
+      [](const LSSTaskPtr &task) {
+        g_file_mgr->update();
+        task->restart();
+      },
+      1000);
+
+  g_task_mgr->add(task4);
 
   for (;;) {
-    // @todo
+    g_task_mgr->work();
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 
+  delete local_logger;
   return 0;
 }
