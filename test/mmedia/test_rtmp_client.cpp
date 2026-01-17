@@ -45,7 +45,8 @@ public:
 };
 
 int main(int argc, char **argv) {
-  // g_lsslogger->setLogLevel(kTrace);
+  local_logger = new LSSLogger();
+  local_logger->setLogLevel(kTrace);
   eventloop_thread.run();
   LSSEventLoop *loop = eventloop_thread.loop();
 
@@ -58,5 +59,6 @@ int main(int argc, char **argv) {
     }
   }
 
+  delete local_logger;
   return 0;
 }

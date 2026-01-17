@@ -45,7 +45,7 @@ LSSLogStream::LSSLogStream(LSSLogger *logger, const char *file,
   stream_ << level_colors[level] << log_string[level];
   stream_ << "[" << file_name << ":" << line << "]" << RESET;
   if(func) {
-    stream_ << level_colors[level] << "[" << func << "]" << RESET;
+    stream_ << MAGENTA << "[" << func << "]" << RESET;
   }
 }
 

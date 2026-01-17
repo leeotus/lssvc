@@ -12,7 +12,6 @@
 using namespace lssvc::utils;
 
 int main(int argc, char **argv) {
-  // g_lsslogger->setLogLevel(kTrace);
   local_logger = new LSSLogger();
   local_logger->setLogLevel(kTrace);
 
@@ -38,8 +37,7 @@ int main(int argc, char **argv) {
   delete local_logger;
   local_logger = nullptr;
   local_logger = new LSSLogger(log);
-
-  // g_lsslogger->setLogLevel(log_info->level);
+  LSSVC_LOG_DEBUG << "hello world";
 
   LSSTaskPtr task4 = std::make_shared<LSSTask>(
       [](const LSSTaskPtr &task) {
