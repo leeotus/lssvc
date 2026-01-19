@@ -234,7 +234,7 @@ void RtmpContext::setPacketType(PacketPtr &pkt) {
     pkt->setPacketType(kPacketTypeAudio);
   } else if (pkt->getPacketType() == kRtmpMsgTypeVideo) {
     pkt->setPacketType(kPacketTypeVideo);
-  } else if (pkt->getPacketType() == kRtmpMsgTypeMetadata) {
+  } else if (pkt->getPacketType() == kRtmpMsgTypeAMFMeta) {
     pkt->setPacketType(kPacketTypeMeta);
   } else if (pkt->getPacketType() == kRtmpMsgTypeAMF3Meta) {
     pkt->setPacketType(kPacketTypeMeta3);
