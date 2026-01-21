@@ -67,6 +67,8 @@ bool AMFAny::isDate() { return false; }
 
 bool AMFAny::isObject() { return false; }
 
+bool AMFAny::isNull() { return false; }
+
 const std::string &AMFAny::name() const { return name_; }
 
 int32_t AMFAny::count() const { return 1; }
