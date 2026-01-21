@@ -3,6 +3,11 @@
 #include <memory>
 #include <thread>
 
+#include "live/live_service.h"
+#include "mmedia/rtmp/rtmp_handler.h"
+#include "network/net/lssvc_eventloop.h"
+#include "network/net/lssvc_eventloop_threadpool.h"
+#include "network/tcp_server.h"
 #include "utils/lssvc_config.h"
 #include "utils/lssvc_filemgr.h"
 #include "utils/lssvc_fileutils.h"
@@ -10,6 +15,9 @@
 #include "utils/lssvc_taskmgr.h"
 
 using namespace lssvc::utils;
+using namespace lssvc::network;
+using namespace lssvc::mmedia;
+using namespace lssvc::live;
 
 int main(int argc, char **argv) {
   local_logger = new LSSLogger();
@@ -34,10 +42,10 @@ int main(int argc, char **argv) {
     return -1;
   }
   log->setRotate(log_info->rotate_type);
+
   delete local_logger;
-  local_logger = nullptr;
   local_logger = new LSSLogger(log);
-  LSSVC_LOG_DEBUG << "hello world";
+  local_logger->setLogLevel(kWarn);
 
   LSSTaskPtr task4 = std::make_shared<LSSTask>(
       [](const LSSTaskPtr &task) {
@@ -47,6 +55,9 @@ int main(int argc, char **argv) {
       1000);
 
   g_task_mgr->add(task4);
+
+  // live service
+  gLiveService->start();
 
   for (;;) {
     g_task_mgr->work();
