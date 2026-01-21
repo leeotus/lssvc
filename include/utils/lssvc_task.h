@@ -12,10 +12,11 @@ using LSSTaskCallback = std::function<void (const LSSTaskPtr &)>;
 
 // @brief a simple Timer task class
 // @note [std::shared_ptr] use 'enable_shared_from_this' to avoid using '*this' pointer
-class LSSTask : std::enable_shared_from_this<LSSTask> {
+class LSSTask : public std::enable_shared_from_this<LSSTask> {
 public:
   LSSTask(const LSSTaskCallback &cb, int64_t interval); // lvalue version
   LSSTask(const LSSTaskCallback &&cb, int64_t interval); // rvalue version
+  ~LSSTask() = default;
 
   void run();
   void restart();

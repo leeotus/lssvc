@@ -31,6 +31,7 @@ void RtmpServer::start() {
                                           std::placeholders::_2));
 
   TcpServer::start();
+  RTMP_DEBUG << "RTMP server started";
 }
 
 void RtmpServer::stop() {
@@ -42,7 +43,7 @@ void RtmpServer::onNewConnection(const network::TcpConnectionPtr &conn) {
     rtmp_handler_->onNewConnection(conn);
   }
   // send RTMP handshake packet to the incoming connection
-  RtmpContextPtr ctx = std::make_shared<RtmpContext>(conn, nullptr, false);
+  RtmpContextPtr ctx = std::make_shared<RtmpContext>(conn, rtmp_handler_, false);
   conn->setContext(kRtmpContext, ctx);
   ctx->startHandShake();
 }

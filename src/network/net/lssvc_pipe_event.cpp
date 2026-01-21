@@ -32,7 +32,7 @@ void LSSPipeEvent::onRead() {
     NETWORK_ERROR << "pipe read error(" << errno << ").";
     return;
   }
-  NETWORK_TRACE << " pipe read tmp:" << tmp;
+  // NETWORK_TRACE << " pipe read tmp:" << tmp;
 }
 
 void LSSPipeEvent::onClose() {

@@ -42,7 +42,8 @@
 /build
 /.vscode
 *.log
-log/
+/log
 
 # clangd
 /.cache
+/config

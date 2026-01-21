@@ -50,6 +50,7 @@ public:
   virtual bool isBoolean();
   virtual bool isDate();
   virtual bool isObject();
+  virtual bool isNull();
 
   virtual void dump() const = 0;
   const std::string &name() const;
