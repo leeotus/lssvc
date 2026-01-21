@@ -33,7 +33,7 @@ bool LSSAppInfo::parseAppInfo(Json::Value &root) {
 
   Json::Value cl = root["content_latency"];
   if (!cl.isNull()) {
-    content_latency_ = cl.asUInt();
+    content_latency_ = cl.asUInt() * 1000;  // seconds
   }
 
   Json::Value sit = root["stream_idle_time"];

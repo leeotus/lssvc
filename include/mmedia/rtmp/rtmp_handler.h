@@ -20,11 +20,11 @@ public:
     return false;
   }
 
-  virtual void onPause(const network::TcpConnectionPtr &conn, bool pause) = 0;
+  virtual void onPause(const network::TcpConnectionPtr &conn, bool pause) {};
 
-  virtual void onSeek(const network::TcpConnectionPtr &conn, double time) = 0;
+  virtual void onSeek(const network::TcpConnectionPtr &conn, double time) {};
 
-  virtual void onPublishPrepare(const network::TcpConnectionPtr &conn) = 0;
+  virtual void onPublishPrepare(const network::TcpConnectionPtr &conn) {};
 };
 
 } // namespace lssvc::mmedia

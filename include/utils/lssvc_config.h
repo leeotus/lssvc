@@ -105,9 +105,11 @@ private:
    */
   bool parseDomainFile(const std::string &file);
 
+public:
   std::string name_{};
   int32_t cpu_start_{0};
   int32_t thread_nums_{1};
+  int32_t cpus_{1};
 
   bool parseLogInfo(const Json::Value &root);
   LogInfoPtr log_info_{};
@@ -117,10 +119,11 @@ private:
   std::unordered_map<std::string, DomainInfoPtr> domaininfos_;
 };
 
+class LSSConfig;
+using LSSConfigPtr = std::shared_ptr<LSSConfig>;
+
 class LSSConfigMgr : public NonCopyable {
 public:
-  using LSSConfigPtr = std::shared_ptr<LSSConfig>;
-
   LSSConfigMgr() = default;
   ~LSSConfigMgr() = default;
 

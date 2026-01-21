@@ -55,6 +55,8 @@ public:
   uint32_t stream_timeout_time_{30 * 1000};
 };
 
+using AppInfoPtr = std::shared_ptr<LSSAppInfo>;
+
 } // namespace lssvc::utils
 
 #endif
