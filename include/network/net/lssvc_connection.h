@@ -86,7 +86,7 @@ public:
 
   void active();
 
-  void deActive();
+  void deactive();
 
   // tcp and udp's close functions are different, therefore, make it virtual
   virtual void forceClose() = 0;

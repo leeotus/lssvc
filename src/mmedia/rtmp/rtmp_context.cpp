@@ -80,7 +80,7 @@ void RtmpContext::startHandShake() {
 // then open wireshark to parse out.cap file
 int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
   uint8_t fmt;
-  uint32_t csid, msg_len = 0, msg_sid = 0, timestamp = 0;
+  uint32_t csid, msg_len = 0, msg_sid = 0;
   uint8_t msg_type = 0;
   uint32_t total_bytes = buf.readableBytes();
   int32_t parsed = 0;
@@ -123,48 +123,68 @@ int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
     msg_len = 0;
     msg_sid = 0;
     msg_type = 0;
-    timestamp = 0;
     int32_t ts = 0;
 
     RtmpMsgHeaderPtr &prev = in_message_headers_[csid];
     if (!prev) {
       prev = std::make_shared<RtmpMsgHeader>();
     }
+    msg_len = prev->msg_len;
+    if (fmt == kRtmpFmt0 || fmt == kRtmpFmt1) {
+      msg_len = BytesReader::readUint24T((pos + parsed) + 3);
+    } else if (msg_len == 0) {
+      msg_len = in_chunk_size_;
+    }
+    PacketPtr &packet = in_packets_[csid];
+    if (!packet) {
+      packet = Packet::newPacket(msg_len);
+      RtmpMsgHeaderPtr header = std::make_shared<RtmpMsgHeader>();
+      header->cs_id = csid;
+      header->msg_len = msg_len;
+      header->msg_sid = msg_sid;
+      header->msg_type = msg_type;
+      header->timestamp = 0;
+      packet->setExt(header);
+    }
+
+    RtmpMsgHeaderPtr header = packet->getExt<RtmpMsgHeader>();
 
     if (fmt == kRtmpFmt0) {
       ts = BytesReader::readUint24T(pos + parsed);
       parsed += 3;
       in_deltas_[csid] = 0;
-      timestamp = ts;
-      msg_len = BytesReader::readUint24T(pos + parsed);
+      header->timestamp = ts;
+      header->msg_len = BytesReader::readUint24T(pos + parsed);
       parsed += 3;
-      msg_type = BytesReader::readUint8T(pos + parsed);
+      header->msg_type = BytesReader::readUint8T(pos + parsed);
       parsed += 1;
-      memcpy(&msg_sid, pos + parsed, 4);
+      memcpy(&header->msg_sid, pos + parsed, 4);
       parsed += 4;
     } else if (fmt == kRtmpFmt1) {
       ts = BytesReader::readUint24T(pos + parsed);
       parsed += 3;
       in_deltas_[csid] = ts;
-      timestamp = ts + prev->timestamp;
-      msg_len = BytesReader::readUint24T(pos + parsed);
+      header->timestamp = ts + prev->timestamp;
+      header->msg_len = BytesReader::readUint24T(pos + parsed);
       parsed += 3;
-      msg_type = BytesReader::readUint8T(pos + parsed);
+      header->msg_type = BytesReader::readUint8T(pos + parsed);
       parsed += 1;
-      msg_sid = prev->msg_sid;
+      header->msg_sid = prev->msg_sid;
     } else if (fmt == kRtmpFmt2) {
       ts = BytesReader::readUint24T(pos + parsed);
       parsed += 3;
       in_deltas_[csid] = ts;
-      timestamp = ts + prev->timestamp;
-      msg_len = prev->msg_len;
-      msg_type = prev->msg_type;
-      msg_sid = prev->msg_sid;
+      header->timestamp = ts + prev->timestamp;
+      header->msg_len = prev->msg_len;
+      header->msg_type = prev->msg_type;
+      header->msg_sid = prev->msg_sid;
     } else if (fmt == kRtmpFmt3) {
-      timestamp = in_deltas_[csid] + prev->timestamp;
-      msg_len = prev->msg_len;
-      msg_type = prev->msg_type;
-      msg_sid = prev->msg_sid;
+      if (header->timestamp == 0) {
+        header->timestamp = in_deltas_[csid] + prev->timestamp;
+      }
+      header->msg_len = prev->msg_len;
+      header->msg_type = prev->msg_type;
+      header->msg_sid = prev->msg_sid;
     }
 
     bool ext = (ts == 0xFFFFFF);
@@ -179,26 +199,10 @@ int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
       ts = BytesReader::readUint32T(pos + parsed);
       parsed += 4;
       if (fmt != kRtmpFmt0) {
-        timestamp = ts + prev->timestamp;
+        header->timestamp = ts + prev->timestamp;
         in_deltas_[csid] = ts;
       }
     }
-
-    PacketPtr &packet = in_packets_[csid];
-    if (!packet) {
-      packet = Packet::newPacket(msg_len);
-    }
-    RtmpMsgHeaderPtr header = packet->getExt<RtmpMsgHeader>();
-    if (!header) {
-      header = std::make_shared<RtmpMsgHeader>();
-      packet->setExt(header);
-    }
-
-    header->cs_id = csid;
-    header->msg_len = msg_len;
-    header->msg_sid = msg_sid;
-    header->msg_type = msg_type;
-    header->timestamp = timestamp;
 
     int bytes = std::min(packet->getSpace(), in_chunk_size_);
     if (total_bytes - parsed < bytes) {
@@ -213,20 +217,20 @@ int32_t RtmpContext::parseMessage(LSSMsgBuffer &buf) {
     buf.retrieve(parsed);
     total_bytes -= parsed;
 
-    prev->cs_id = csid;
-    prev->msg_len = msg_len;
-    prev->msg_sid = msg_sid;
-    prev->msg_type = msg_type;
-    prev->timestamp = timestamp;
+    prev->cs_id = header->cs_id;
+    prev->msg_len = header->msg_len;
+    prev->msg_sid = header->msg_sid;
+    prev->msg_type = header->msg_type;
+    prev->timestamp = header->timestamp;
 
-    if (packet->getSpace()== 0) {
-      packet->setPacketType(msg_type);
-      packet->setTimestamp(timestamp);
+    if (packet->getSpace() == 0) {
+      packet->setPacketType(header->msg_type);
+      packet->setTimestamp(header->timestamp);
       messageComplete(std::move(packet));
       packet.reset();
     }
-    }
-    return 1;
+  }
+  return 1;
 }
 
 void RtmpContext::setPacketType(PacketPtr &pkt) {
@@ -279,7 +283,7 @@ void RtmpContext::messageComplete(PacketPtr &&data) {
     setPacketType(data);
     // TODO: parse audio & video data
     if(rtmp_handler_) {
-      rtmp_handler_->onRecv(connection_, data);
+      rtmp_handler_->onRecv(connection_, std::move(data));
     }
     break;
   }
@@ -680,6 +684,7 @@ void RtmpContext::sendUserCtrlMessage(short nType, uint32_t value1, uint32_t val
   if(nType == kRtmpEventTypeSetBufferLength) {
     p += BytesWriter::writeUint32T(body, value2);
   }
+  header->msg_len = p - body;
   pkt->setPacketSize(header->msg_len);
   RTMP_DEBUG << "send user control type:" << nType << " value:" << value1
              << ", value2:" << value2
@@ -1060,16 +1065,19 @@ void RtmpContext::parseNameAndTcUrl() {
   std::vector<std::string> list = utils::LSSString::split(tc_url_, "/");
 
   // TODO: parse url
-  if(list.size() == 6) {
+  if(list.size() == 5) {
     // rtmp://ip/domain:port/app/stream
-    domain = list[3];
-    app_ = list[4];
-    name_ = list[5];
-  } else if(list.size() == 5) {
+    // domain = list[3];
+    // app_ = list[4];
+    // name_ = list[5];
+    domain = list[2];
+    app_ = list[3];
+    // name_ = list[4];
+  } else if(list.size() == 4) {
     // rtmp://domain:port/app/stream
     domain = list[2];
     app_ = list[3];
-    name_ = list[4];
+    // name_ = list[4];
   }
 
   auto p = domain.find_first_of(":");
@@ -1092,6 +1100,7 @@ void RtmpContext::parseNameAndTcUrl() {
 void RtmpContext::handlePublish(AMFObject &obj) {
   auto tran_id = obj.property(1)->number();
   name_ = obj.property(3)->str();
+  parseNameAndTcUrl();
 
   RTMP_TRACE << "received publish session name:" << session_name_
              << " param: " << param_

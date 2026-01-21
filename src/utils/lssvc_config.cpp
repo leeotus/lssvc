@@ -36,6 +36,10 @@ bool LSSConfig::loadConfig(const std::string &file) {
   if (!cpusObj.isNull()) {
     cpu_start_ = cpusObj.asInt();
   }
+  Json::Value cpuNumObj = root["cpus"];
+  if (!cpuNumObj.isNull()) {
+    cpus_ = cpuNumObj.asInt();
+  }
   Json::Value threadsObj = root["threads"];
   if (!threadsObj.isNull()) {
     thread_nums_ = threadsObj.asInt();
@@ -97,10 +101,10 @@ bool LSSConfig::parseLogInfo(const Json::Value &root) {
   return true;
 }
 
-LSSConfigMgr::LSSConfigPtr LSSConfigMgr::getConfig() { return config_; }
+LSSConfigPtr LSSConfigMgr::getConfig() { return config_; }
 
 bool LSSConfigMgr::loadConfig(const std::string &file) {
-  LSSConfigMgr::LSSConfigPtr config = std::make_shared<LSSConfig>();
+  LSSConfigPtr config = std::make_shared<LSSConfig>();
   if(config->loadConfig(file)) {
     // pass to the LSSConfig
     std::lock_guard<std::mutex> lock(lock_);
