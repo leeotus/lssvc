@@ -158,7 +158,6 @@ void LiveSession::setPublisher(LiveUserPtr &user) {
   }
 
   if (publisher_ && !publisher_->destroyed_.exchange(true)) {
-    publisher_->destroyed_.exchange(true);
     publisher_->close();
   }
   publisher_ = user;

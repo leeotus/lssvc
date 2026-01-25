@@ -27,9 +27,9 @@ int GopMgr::getGopByLatency(int content_latency, int &latency) const {
   auto it = gops_.rbegin();
   for (; it != gops_.rend(); ++it) {
     int item_latency = lastest_timestamp_ - it->timestamp;
-    if(item_latency < content_latency) {
+    if(item_latency <= content_latency) {
       got = it->index;
-      latency = got;
+      latency = item_latency;
     } else {
       break;
     }
@@ -61,4 +61,4 @@ void GopMgr::printAllGops() {
   LIVE_TRACE << ss.str() << "\r\n";
 }
 
-int64_t GopMgr::getLatestTimestamp() { return lastest_timestamp_; }
+int64_t GopMgr::getLatestTimestamp() const { return lastest_timestamp_; }

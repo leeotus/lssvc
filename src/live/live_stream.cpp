@@ -233,7 +233,7 @@ void LiveStream::skipFrame(const PlayerUserPtr &user) {
 
   auto video_header = codec_headers_.getVideoHeader(index);
   if (video_header) {
-    if (video_header) {
+    if (video_header->getIndex() > user->video_header_index_) {
       user->video_header_ = video_header;
       user->video_header_index_ = video_header->getIndex();
     }

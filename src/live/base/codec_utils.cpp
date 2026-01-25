@@ -3,7 +3,7 @@
 using namespace lssvc::mmedia;
 using namespace lssvc::live;
 
-bool CodecUtils::isCodecHeader(const mmedia::PacketPtr &pkt) {
+bool CodecUtils::isCodecHeader(const PacketPtr &pkt) {
   if (pkt->getPacketSize() > 1) {
     // flv header
     const char *b = pkt->data() + 1;
@@ -14,7 +14,7 @@ bool CodecUtils::isCodecHeader(const mmedia::PacketPtr &pkt) {
   return false;
 }
 
-bool CodecUtils::isKeyFrame(const mmedia::PacketPtr &pkt) {
+bool CodecUtils::isKeyFrame(const PacketPtr &pkt) {
   if (pkt->getPacketSize() > 0) {
     // flv header
     const char *b = pkt->data();

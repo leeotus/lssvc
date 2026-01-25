@@ -1,10 +1,12 @@
 #include "live/base/time_corrector.h"
 #include "live/base/codec_utils.h"
+#include "live/base/live_logger.h"
 
 using namespace lssvc::live;
 
 uint32_t TimeCorrector::correctTimestamp(const mmedia::PacketPtr &pkt) {
   if (!CodecUtils::isCodecHeader(pkt)) {
+    // LIVE_TRACE << "ts:" << pkt->getTimestamp() << " size: " << pkt->getPacketSize();
     int32_t type = pkt->getPacketType();
     if (type == mmedia::kPacketTypeVideo) {
       // video packet

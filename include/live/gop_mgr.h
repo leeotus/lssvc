@@ -48,7 +48,7 @@ public:
   void printAllGops();
 
   // @brief return the latest timestamp
-  int64_t getLatestTimestamp();
+  int64_t getLatestTimestamp() const;
 
 private:
   std::vector<GopItemInfo> gops_;
