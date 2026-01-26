@@ -4,6 +4,7 @@
 #include "mmedia/rtmp/amf/amf_boolean.h"
 #include "mmedia/rtmp/amf/amf_date.h"
 #include "mmedia/rtmp/amf/amf_longstring.h"
+#include "mmedia/rtmp/amf/amf_null.h"
 #include "mmedia/rtmp/amf/amf_number.h"
 #include "mmedia/rtmp/amf/amf_string.h"
 
@@ -87,6 +88,7 @@ int AMFObject::decode(const char *data, int size, bool has) {
     }
     case kAMFNull: {
       RTMP_TRACE << "Null.";
+      properties_.emplace_back(std::move(std::make_shared<AMFNull>()));
       break;
     }
     case kAMFEcmaArray: {
@@ -245,6 +247,7 @@ int AMFObject::decodeOnce(const char *data, int size, bool has) {
   }
   case kAMFNull: {
     RTMP_TRACE << "Null.";
+    properties_.emplace_back(std::move(std::make_shared<AMFNull>()));
     break;
   }
   case kAMFEcmaArray: {

@@ -45,18 +45,20 @@ public:
 };
 
 int main(int argc, char **argv) {
-  // g_lsslogger->setLogLevel(kTrace);
+  local_logger = new LSSLogger();
+  local_logger->setLogLevel(kTrace);
   eventloop_thread.run();
   LSSEventLoop *loop = eventloop_thread.loop();
 
   if (loop) {
     RtmpClient client(loop, new RtmpHandlerImpl());
     // TODO: server haven't implement stream pushing
-    client.play("rtmp://192.168.186.132/ucloud/test");
+    client.play("rtmp://localhost/ucloud/test");
     while(1) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   }
 
+  delete local_logger;
   return 0;
 }

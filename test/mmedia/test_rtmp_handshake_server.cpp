@@ -19,7 +19,8 @@ using RtmpHandShakePtr = std::shared_ptr<RtmpHandShake>;
 const char *http_response="HTTP/1.0 200 OK\r\nServer: tmms\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n";
 
 int main(int argc, char **argv) {
-  g_lsslogger->setLogLevel(kTrace);
+  local_logger = new LSSLogger();
+  local_logger->setLogLevel(kTrace);
   eventloop_thread.run();
   LSSEventLoop *loop = eventloop_thread.loop();
 
@@ -52,5 +53,6 @@ int main(int argc, char **argv) {
     }
     server.stop();
   }
+  delete local_logger;
   return 0;
 }

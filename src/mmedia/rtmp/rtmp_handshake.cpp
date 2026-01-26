@@ -223,11 +223,11 @@ void RtmpHandShake::createC2S2(const char *data, int bytes, int offset) {
   if (is_complex_handshake_) {
     uint8_t digest[32];
     if (is_client_) {
-      calculateDigest(digest_, 32, 0, rtmp_player_key, sizeof(rtmp_player_key),
-                      digest);
+      calculateDigest((const uint8_t *)(data + offset), 32, 0, rtmp_player_key,
+                      sizeof(rtmp_player_key), digest);
     } else {
-      calculateDigest(digest_, 32, 0, rtmp_server_key, sizeof(rtmp_server_key),
-                      digest);
+      calculateDigest((const uint8_t *)(data + offset), 32, 0, rtmp_server_key,
+                      sizeof(rtmp_server_key), digest);
     }
     calculateDigest(C2S2_, kRtmpHandShakePacketSize - 32, 0, digest, 32,
                     &C2S2_[kRtmpHandShakePacketSize - 32]);

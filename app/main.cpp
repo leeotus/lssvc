@@ -1,7 +1,13 @@
 #include <iostream>
 #include <stdio.h>
+#include <memory>
 #include <thread>
 
+#include "live/live_service.h"
+#include "mmedia/rtmp/rtmp_handler.h"
+#include "network/net/lssvc_eventloop.h"
+#include "network/net/lssvc_eventloop_threadpool.h"
+#include "network/tcp_server.h"
 #include "utils/lssvc_config.h"
 #include "utils/lssvc_filemgr.h"
 #include "utils/lssvc_fileutils.h"
@@ -9,10 +15,16 @@
 #include "utils/lssvc_taskmgr.h"
 
 using namespace lssvc::utils;
+using namespace lssvc::network;
+using namespace lssvc::mmedia;
+using namespace lssvc::live;
 
 int main(int argc, char **argv) {
+  local_logger = new LSSLogger();
+  local_logger->setLogLevel(kTrace);
+
   // @todo pass the config.json path through argv
-  if (!g_config_mgr->loadConfig("./config.json")) {
+  if (!g_config_mgr->loadConfig("./config/config.json")) {
     std::cerr << "load config file failed\r\n";
     return -1;
   }
@@ -29,13 +41,29 @@ int main(int argc, char **argv) {
     std::cerr << "log can't open\r\n";
     return -1;
   }
-
   log->setRotate(log_info->rotate_type);
-  g_lsslogger->setLogLevel(log_info->level);
+
+  delete local_logger;
+  local_logger = new LSSLogger(log);
+  local_logger->setLogLevel(kWarn);
+
+  LSSTaskPtr task4 = std::make_shared<LSSTask>(
+      [](const LSSTaskPtr &task) {
+        g_file_mgr->update();
+        task->restart();
+      },
+      1000);
+
+  g_task_mgr->add(task4);
+
+  // live service
+  gLiveService->start();
 
   for (;;) {
-    // @todo
+    g_task_mgr->work();
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 
+  delete local_logger;
   return 0;
 }

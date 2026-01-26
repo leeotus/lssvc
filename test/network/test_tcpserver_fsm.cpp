@@ -27,7 +27,7 @@ const char *http_response = "HTTP/1.0 200 OK\r\nServer: tmms\r\nContent-Type: "
 int main(int argc, char **argv) {
   eventloop_thread.run();
   LSSEventLoop *loop = eventloop_thread.loop();
-  // g_lsslogger->setLogLevel(kError);
+  local_logger = new LSSLogger();
 
   if (loop) {
     LSSInetAddress listen_addr("192.168.186.132:25678");
@@ -62,5 +62,6 @@ int main(int argc, char **argv) {
     }
   }
 
+  delete local_logger;
   return 0;
 }

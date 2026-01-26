@@ -43,4 +43,4 @@ void LSSConnection::active() {
   }
 }
 
-void LSSConnection::deActive() { active_.store(false); }
+void LSSConnection::deactive() { active_.store(false); }

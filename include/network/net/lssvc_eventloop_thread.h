@@ -36,12 +36,12 @@ private:
   void start();
 
   LSSEventLoop *loop_{nullptr};
-  std::thread thread_;
   bool running_{false};
   std::mutex lock_;
   std::condition_variable cond_;
   std::once_flag once_;
   std::promise<int> promise_loop_;
+  std::thread thread_;
 };
 
 } // namespace network
