@@ -85,6 +85,12 @@ void LSSMsgBuffer::retrieveAll() {
   tail_ = head_ = kBufferOffset;
 }
 
+void LSSMsgBuffer::retrieveUntil(const char *end) {
+  assert(peek() <= end);
+  assert(end <= beginWrite());
+  retrieve(end - peek());
+}
+
 const char *LSSMsgBuffer::beginWrite() const { return begin() + tail_; }
 
 char *LSSMsgBuffer::beginWrite() { return begin() + tail_; }
