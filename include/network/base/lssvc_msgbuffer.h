@@ -91,6 +91,9 @@ public:
   // @brief append a unsigned int64 value to the end of the buffer
   void appendInt64(const uint64_t l);
 
+  // @brief remove the data before a certain position from the buffer
+  void retrieveUntil(const char *end);
+
   // @brief remove all data in the buffer
   void retrieveAll();
 

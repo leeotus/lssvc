@@ -80,9 +80,7 @@ HttpParserState HttpParser::parse(LSSMsgBuffer &buf) {
       }
       buf.retrieveUntil(crlf + 2);
       if(current_chunk_length_ == 0) {
-        chunk_.reset();
         state_ = kExpectChunkComplete;
-        return state_;
       } else {
         state_ = kExpectChunkBody;
       }
@@ -105,23 +103,21 @@ HttpParserState HttpParser::parse(LSSMsgBuffer &buf) {
     break;
   }
 
+  case kExpectLastEmptyChunk: {
+    auto crlf = buf.findCRLF();
+    if(crlf) {
+      buf.retrieveUntil(crlf + 2);
+      chunk_.reset();
+      state_ = kExpectChunkComplete;
+      break;
+    }
+  }
+
   default:
     break;
   }
 
   return state_;
-}
-
-void HttpParser::addHeader(const std::string &key, const std::string &value) {
-  std::string k = key;
-  // lower case
-  std::transform(k.begin(), k.end(), k.begin(), ::tolower);
-  headers_[k] = value;
-}
-
-void HttpParser::addHeader(std::string &&key, std::string &&value) {
-  std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-  headers_[std::move(key)] = std::move(value);
 }
 
 void HttpParser::parseHeaders() {
@@ -143,12 +139,12 @@ void HttpParser::parseHeaders() {
       std::string value = it.substr(pos+1);
 
       HTTP_DEBUG << "parse header key:" << key << " value:" << value;
-      addHeader(std::move(key), std::move(value));
+      req_->addHeader(std::move(key), std::move(value));
     }
   }
 
   // get the value of content-length field
-  auto len = getHeader("content-length");
+  auto len = req_->getHeader("content-length");
   if(!len.empty()) {
     HTTP_TRACE << "content-length:" << len;
     try {
@@ -166,15 +162,17 @@ void HttpParser::parseHeaders() {
       state_ = kExpectNormalBody;
     }
   } else {
-    const std::string &chunk = getHeader("transfer-encoding");
+    const std::string &chunk = req_->getHeader("transfer-encoding");
     if(!chunk.empty() && chunk == "chunked") {
       // http chunk transfering
       is_chunked_ = true;
+      req_->setIsChunked(true);
       state_ = kExpectChunkLen;
     } else {
-      if ((!is_request_ && code_ != 200) ||
+      if ((!is_request_ && req_->getStatusCode() != 200) ||
           (is_request_ &&
-           (method_ == "GET" || method_ == "HEAD" || method_ == "OPTION"))) {
+           (req_->getMethod() == kGet || req_->getMethod() == kHead ||
+            req_->getMethod() == kOptions))) {
         // has no body
         current_chunk_length_ = 0;
         state_ = kExpectHttpComplete;
@@ -247,62 +245,40 @@ void HttpParser::processMethodline(const std::string &line) {
   if (str[0] == 'h' && str[1] == 't' && str[2] == 't' && str[3] == 'p') {
     is_request_ = false;
   }
+  if(req_) {
+    req_.reset();
+  }
+  req_ = std::make_shared<HttpRequest>(is_request_);
+
   if(is_request_) {
-    method_ = std::move(list[0]);
+    req_->setMethod(list[0]);
     const std::string &path = list[1];
     auto pos = path.find_first_of("?");
     if(pos != std::string::npos) {
-      path_ = path.substr(0, pos);
-      query_ = path.substr(pos + 1);
+      req_->setPath(path.substr(0, pos));
+      req_->setPath(path.substr(pos + 1));
     } else {
-      path_ = path;
+      req_->setPath(path);
     }
+    req_->setVersion(list[2]);
 
-    version_ = list[2];
-    HTTP_DEBUG << "http method:" << method_ << " path:" << path_
-               << " query:" << query_ << " version:" << version_;
+    HTTP_DEBUG << "http method:" << list[0] << " path:" << req_->getPath()
+               << " query:" << req_->getQuery() << " version:" << list[2];
   } else {
-    version_ = list[0];
-    code_ = std::atoi(list[1].c_str());
+    req_->setVersion(list[0]);
+    req_->setStatusCode(std::atoi(list[1].c_str()));
+    HTTP_DEBUG << "http code:" << list[1] << " version:" << list[0];
   }
 }
-
-const std::string &HttpParser::getHeader(const std::string &key) {
-  std::string k = key;
-  std::transform(k.begin(), k.end(), k.begin(), ::tolower);
-  auto it = headers_.find(k);
-  if(it != headers_.end()) {
-    return it->second;
-  }
-  return string_empty;
-}
-
-const std::unordered_map<std::string, std::string> &
-HttpParser::getHeaders() const {
-  return headers_;
-}
-
-const std::string &HttpParser::getMethod() const { return method_; }
-
-const std::string &HttpParser::getVersion() const { return version_; }
-
-uint32_t HttpParser::getCode() const { return code_; }
-
-const std::string &HttpParser::getPath() const { return path_; }
-
-const std::string &HttpParser::getQuery() const { return query_; }
 
 const PacketPtr &HttpParser::getChunk() const { return chunk_; }
 
 HttpStatusCode HttpParser::getReason() const { return reason_; }
 
-bool HttpParser::isRequest() const { return is_request_; }
-
 void HttpParser::clearForNextHttp() {
   state_ = kExpectHeaders;
   header_.clear();
-  path_.clear();
-  query_.clear();
+  req_.reset();
   current_content_length_ = -1;
   chunk_.reset();
 }
