@@ -80,7 +80,8 @@ HttpParserState HttpParser::parse(LSSMsgBuffer &buf) {
       }
       buf.retrieveUntil(crlf + 2);
       if(current_chunk_length_ == 0) {
-        state_ = kExpectChunkComplete;
+        chunk_.reset();
+        state_ = kExpectLastEmptyChunk;
       } else {
         state_ = kExpectChunkBody;
       }

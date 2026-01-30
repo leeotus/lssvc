@@ -1,0 +1,23 @@
+#ifndef __HTTP_HANDLER_H__
+#define __HTTP_HANDLER_H__
+
+#include "mmedia/base/mmedia_handler.h"
+#include "mmedia/base/packet.h"
+#include <memory>
+
+namespace lssvc::mmedia {
+
+class HttpRequest;
+using HttpRequestPtr = std::shared_ptr<HttpRequest>;
+
+class HttpHandler : public MMediaHandler {
+public:
+  virtual void onSend(const network::TcpConnectionPtr &conn) = 0;
+  virtual bool onSendNextChunk(const network::TcpConnectionPtr &conn) = 0;
+  virtual void onRequest(const network::TcpConnectionPtr &conn,
+                         const HttpRequestPtr &req, const PacketPtr &pkt) = 0;
+};
+
+}   // namespace lssvc::mmedia
+
+#endif
