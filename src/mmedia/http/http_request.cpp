@@ -29,6 +29,11 @@ void HttpRequest::removeHeader(const std::string &key) {
   headers_.erase(k);
 }
 
+const std::unordered_map<std::string, std::string> &
+HttpRequest::getHeaders() const {
+  return headers_;
+}
+
 const std::string &HttpRequest::getHeader(const std::string &key) const {
   std::string k = key;
   std::transform(k.begin(), k.end(), k.begin(), ::tolower);
@@ -50,11 +55,11 @@ std::string HttpRequest::makeHeaders() {
   for(auto const &h : headers_) {
     ss << h.first << ": " << h.second << "\r\n";
   }
-  if(!body_.empty()) {
-    ss << "content-length: " << body_.size() << "\r\n";
-  } else {
-    ss << "content-length: 0\r\n";
-  }
+  // if(!body_.empty()) {
+  //   ss << "content-length: " << body_.size() << "\r\n";
+  // } else {
+  //   ss << "content-length: 0\r\n";
+  // }
   ss << "\r\n";
   return ss.str();
 }

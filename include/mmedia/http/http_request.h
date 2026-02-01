@@ -25,6 +25,10 @@ public:
   // @brief remove one possible kv pair in the headers
   void removeHeader(const std::string &key);
 
+  // @brief return the whole headers
+  const std::unordered_map<std::string, std::string> &getHeaders() const;
+
+  // @brief return the value of the specific input key in the headers
   const std::string &getHeader(const std::string &key) const;
 
   // @brief encapsulate HTTP header data
