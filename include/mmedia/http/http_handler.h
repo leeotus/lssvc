@@ -12,8 +12,13 @@ using HttpRequestPtr = std::shared_ptr<HttpRequest>;
 
 class HttpHandler : public MMediaHandler {
 public:
+  // @brief callback after sending http message to the peer connection
   virtual void onSend(const network::TcpConnectionPtr &conn) = 0;
+
+  // @brief callback when it is ready to send next http chunk
   virtual bool onSendNextChunk(const network::TcpConnectionPtr &conn) = 0;
+
+  // @brief handle new request
   virtual void onRequest(const network::TcpConnectionPtr &conn,
                          const HttpRequestPtr &req, const PacketPtr &pkt) = 0;
 };
