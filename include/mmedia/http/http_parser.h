@@ -74,7 +74,7 @@ private:
   int32_t current_content_length_{0};
   bool is_stream_{false};
   bool is_chunked_{false};
-  bool is_request_{false};
+  bool is_request_{true};
 
   // store the reason why parsing http request fails
   HttpStatusCode reason_{kUnknown};

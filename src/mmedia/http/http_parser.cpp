@@ -35,7 +35,7 @@ HttpParserState HttpParser::parse(LSSMsgBuffer &buf) {
       if(space != (const char *)buf.beginWrite()) {
         auto size = space - buf.peek();
         header_.assign(buf.peek(), size); // store the http header
-        buf.retrieve(size);
+        buf.retrieve(size + 4);           // 4bytes for "\r\n\r\n"
         parseHeaders();
         if(state_ == kExpectHttpComplete || state_ == kExpectError) {
           return state_;
@@ -245,6 +245,8 @@ void HttpParser::processMethodline(const std::string &line) {
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
   if (str[0] == 'h' && str[1] == 't' && str[2] == 't' && str[3] == 'p') {
     is_request_ = false;
+  } else {
+    is_request_ = true;
   }
   if(req_) {
     req_.reset();
