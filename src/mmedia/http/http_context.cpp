@@ -9,9 +9,8 @@ namespace {
   static std::string CHUNK_EOF = "0\r\n\r\n";
 }
 
-HttpContext::HttpContext(network::LSSEventLoop *loop,
-                         const TcpConnectionPtr &conn, HttpHandler *handler)
-    : loop_(loop), connection_(conn), handler_(handler) {}
+HttpContext::HttpContext(const TcpConnectionPtr &conn, HttpHandler *handler)
+    : connection_(conn), handler_(handler) {}
 
 int32_t HttpContext::parse(LSSMsgBuffer &buf) {
   while (buf.readableBytes() > 1) {
@@ -24,7 +23,7 @@ int32_t HttpContext::parse(LSSMsgBuffer &buf) {
     } else if(state == kExpectError) {
       // error occurs
       HTTP_DEBUG << "state == kExpectError";
-      // TODO: send 404 or other error codes
+      // TODO: send 404 or other error codes and return -1
       connection_->forceClose();
     }
   }
@@ -47,7 +46,7 @@ bool HttpContext::postRequest(const std::string &header, PacketPtr &pkt) {
   }
   header_ = header;
   out_packet_ = pkt;
-  post_state_ = kHttpContextPostHttp; // update state
+  post_state_ = kHttpContextPostHttpHeader; // update state
   // send http request header first:
   connection_->send(header_.c_str(), header_.size());
   return true;
@@ -69,8 +68,8 @@ bool HttpContext::postChunkHeader(const std::string &header) {
     return false;
   }
   header_ = header;
-  post_state_ = kHttpContextPostChunkHeader;
-  connection_->send(header.c_str(), header.size());
+  post_state_ = kHttpContextPostInit;
+  connection_->send(header_.c_str(), header_.size());
   header_sent_ = true;
   return true;
 }
@@ -106,16 +105,20 @@ bool HttpContext::postStreamHeader(const std::string &header) {
   return true;
 }
 
-void HttpContext::postStreamChunk(PacketPtr &pkt) {
-  out_packet_ = pkt;
-  if(header_sent_) {
-    post_state_ = kHttpContextPostHttpStreamHeader;
-    connection_->send(header_.c_str(), header_.size());
-    header_sent_ = true;
-  } else {
-    post_state_ = kHttpContextPostHttpStreamChunk;
-    connection_->send(out_packet_->data(), out_packet_->getPacketSize());
+bool HttpContext::postStreamChunk(PacketPtr &pkt) {
+  if (post_state_ == kHttpContextPostInit) {
+    out_packet_ = pkt;
+    if (!header_sent_) {
+      post_state_ = kHttpContextPostHttpStreamHeader;
+      connection_->send(header_.c_str(), header_.size());
+      header_sent_ = true;
+    } else {
+      post_state_ = kHttpContextPostHttpStreamChunk;
+      connection_->send(out_packet_->data(), out_packet_->getPacketSize());
+    }
+    return true;
   }
+  return false;
 }
 
 void HttpContext::writeComplete(const TcpConnectionPtr &conn) {
@@ -128,6 +131,9 @@ void HttpContext::writeComplete(const TcpConnectionPtr &conn) {
   case kHttpContextPostHttp: {
     // already send http body message, turn back to init stats
     post_state_ = kHttpContextPostInit;
+    if (handler_) {
+      handler_->onSend(conn);
+    }
     break;
   }
 
@@ -140,15 +146,17 @@ void HttpContext::writeComplete(const TcpConnectionPtr &conn) {
 
   case kHttpContextPostHttpBody: {
     post_state_ = kHttpContextPostInit;
+    if (handler_) {
+      handler_->onSend(conn);
+    }
     break;
   }
 
   case kHttpContextPostChunkHeader: {
     post_state_ = kHttpContextPostChunkLen;
-    char buf[32] = {0, };
-    sprintf(buf, "%X\r\n", out_packet_->getPacketSize());
-    header_ = std::string(buf);
-    connection_->send(header_.c_str(), header_.size());
+    if (handler_) {
+      handler_->onSendNextChunk(conn);
+    }
     break;
   }
 
@@ -160,21 +168,33 @@ void HttpContext::writeComplete(const TcpConnectionPtr &conn) {
 
   case kHttpContextPostChunkBody: {
     post_state_ = kHttpContextPostInit;
+    if (handler_) {
+      handler_->onSendNextChunk(conn);
+    }
     break;
   }
 
   case kHttpContextPostChunkEOF: {
     post_state_ = kHttpContextPostInit;
+    if (handler_) {
+      handler_->onSend(conn);
+    }
     break;
   }
 
   case kHttpContextPostHttpStreamHeader: {
     post_state_ = kHttpContextPostInit;
+    if (handler_) {
+      handler_->onSendNextChunk(conn);
+    }
     break;
   }
 
   case kHttpContextPostHttpStreamChunk: {
     post_state_ = kHttpContextPostInit;
+    if (handler_) {
+      handler_->onSendNextChunk(conn);
+    }
     break;
   }
 

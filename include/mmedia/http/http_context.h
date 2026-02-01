@@ -28,12 +28,10 @@ class HttpContext {
 public:
   /**
    * @brief construct a new HttpContext object
-   * @param loop [in] the eventloop thread handling this connection
    * @param conn [in] the incoming tcp connection
    * @param handler [in] interface serving the upper layer
    */
-  HttpContext(network::LSSEventLoop *loop,
-              const network::TcpConnectionPtr &conn, HttpHandler *handler);
+  HttpContext(const network::TcpConnectionPtr &conn, HttpHandler *handler);
 
   ~HttpContext() = default;
 
@@ -53,13 +51,12 @@ public:
   void postEofChunk();
 
   bool postStreamHeader(const std::string &header);
-  void postStreamChunk(PacketPtr &pkt);
+  bool postStreamChunk(PacketPtr &pkt);
 
   // @note for state machine transition
   void writeComplete(const network::TcpConnectionPtr &conn);
 
 private:
-  network::LSSEventLoop *loop_{nullptr};
   network::TcpConnectionPtr connection_;
   HttpParser http_parser_;
   std::string header_;   // http header
