@@ -1,6 +1,7 @@
 #include "mmedia/http/http_parser.h"
 #include "mmedia/base/mmedia_logger.h"
 #include "mmedia/http/http_types.h"
+#include "mmedia/http/http_utils.h"
 #include "utils/lssvc_string.h"
 #include <algorithm>
 #include <ctype.h>
@@ -22,8 +23,12 @@ HttpParserState HttpParser::parse(LSSMsgBuffer &buf) {
     // empty
     return state_;  // return current state
   }
-  switch (state_)
-  {
+  if (state_ == kExpectHttpComplete) {
+    clearForNextHttp();
+  } else if (state_ == kExpectChunkComplete) {
+    clearForNextChunk();
+  }
+  switch (state_) {
   case kExpectHeaders: {
     // parse http header
     if(buf.readableBytes() > CRLFCRLF.size()) {
@@ -83,6 +88,7 @@ HttpParserState HttpParser::parse(LSSMsgBuffer &buf) {
         chunk_.reset();
         state_ = kExpectLastEmptyChunk;
       } else {
+        current_chunk_length_ += 2; // \r\n
         state_ = kExpectChunkBody;
       }
     } else {
@@ -138,7 +144,8 @@ void HttpParser::parseHeaders() {
     if(pos != std::string::npos) {
       std::string key = it.substr(0, pos);
       std::string value = it.substr(pos+1);
-
+      key = HttpUtils::trim(key);
+      value = HttpUtils::trim(value);
       HTTP_DEBUG << "parse header key:" << key << " value:" << value;
       req_->addHeader(std::move(key), std::move(value));
     }
@@ -228,6 +235,7 @@ void HttpParser::parseChunk(network::LSSMsgBuffer &buf) {
   buf.retrieve(size);
   current_chunk_length_ -= size;
   if(current_chunk_length_ == 0 || chunk_->getSpace() == 0) {
+    chunk_->setPacketSize(chunk_->getPacketSize() - 2);
     state_ = kExpectChunkComplete;
   }
 }
@@ -235,12 +243,6 @@ void HttpParser::parseChunk(network::LSSMsgBuffer &buf) {
 void HttpParser::processMethodline(const std::string &line) {
   HTTP_DEBUG << "parse method line:" << line;
   auto list = LSSString::split(line, " ");
-  if(list.size() != 3) {
-    reason_ = k400BadRequest;
-    state_ = kExpectError;
-    return;
-  }
-
   std::string str = list[0];
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
   if (str[0] == 'h' && str[1] == 't' && str[2] == 't' && str[3] == 'p') {

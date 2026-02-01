@@ -2,6 +2,10 @@
 #include "live/base/live_logger.h"
 #include "live/live_session.h"
 #include "live/live_stream.h"
+#include "mmedia/http/http_context.h"
+#include "mmedia/http/http_request.h"
+#include "mmedia/http/http_server.h"
+#include "mmedia/http/http_utils.h"
 #include "mmedia/rtmp/rtmp_handler.h"
 #include "mmedia/rtmp/rtmp_server.h"
 #include "network/base/lssvc_inetaddress.h"
@@ -9,6 +13,10 @@
 #include "utils/lssvc_string.h"
 #include "utils/lssvc_task.h"
 #include "utils/lssvc_time.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <memory>
 
@@ -188,6 +196,11 @@ void LiveService::start() {
         TcpServer *server = new RtmpServer(e, addr, this);
         servers_.push_back(server);
         servers_.back()->start();
+      } else if(s->protocol == "http" || s->protocol == "HTTP") {
+        LSSInetAddress addr(s->addr, s->port); // default ipv4
+        TcpServer *server = new HttpServer(e, addr, this);
+        servers_.push_back(server);
+        servers_.back()->start();
       }
       // TODO: other protocols
     }
@@ -201,4 +214,77 @@ void LiveService::stop() {}
 
 LSSEventLoop *LiveService::getNextLoop() {
   return pool_->getNextLoop();
+}
+
+void LiveService::onSend(const TcpConnectionPtr &conn) {}
+
+bool LiveService::onSendNextChunk(const TcpConnectionPtr &conn) {
+  return false;
+}
+
+// NOTE: to test http server:
+// > curl -i -vo /dev/null "http://192.168.186.132:8080/live/test.flv"
+// > wget "http://192.168.186.132:8080/live/test.flv"
+// then you can use md5sum to verify these two video files
+// > md5sum test.flv
+void LiveService::onRequest(const TcpConnectionPtr &conn,
+                            const HttpRequestPtr &req,
+                            const PacketPtr &packet) {
+  if (req->isRequest()) {
+    LIVE_DEBUG << "request method:" << req->getMethod()
+               << " path:" << req->getPath();
+  } else {
+    LIVE_DEBUG << "request code:" << req->getStatusCode() << " message:"
+               << HttpUtils::parseStatusCode(req->getStatusCode());
+  }
+
+  auto headers = req->getHeaders();
+  for(auto const &h : headers) {
+    LIVE_DEBUG << h.first << ":" << h.second;
+  }
+
+  if(req->isRequest()) {
+    // RESEARCH: DEBUG: open a specified file
+    int fd = ::open("../test.flv", O_RDONLY, 0644);
+    if(fd < 0) {
+      LIVE_ERROR << "open file failed: " << strerror(errno);
+      conn->forceClose();
+      return;
+    }
+    HttpRequestPtr res = std::make_shared<HttpRequest>(false);
+    res->setStatusCode(200); // success
+    res->addHeader("server", "lssvc");
+    res->addHeader("content-type", "video/x-flv");
+
+    /* RESEARCH: DEBUG: for simple http request
+    res->setStatusCode(200);
+    res->addHeader("server", "lssvc");
+    res->addHeader("content-type", "text/json");
+    res->addHeader("content-length", std::to_string(strlen("{\"hello world\"}")));
+    res->setBody("{\"{hello world}\"}");
+    */
+
+    auto ctx = conn->getContext<HttpContext>(kHttpContext);
+    if(ctx) {
+      res->setIsStream(true);
+      ctx->postRequest(res);
+    }
+
+    while(true) {
+      PacketPtr ndata = Packet::newPacket(65535);
+      auto ret = ::read(fd, ndata->data(), 65535);
+      if(ret <= 0) {
+        break;
+      }
+      ndata->setPacketSize(ret);
+      while(true) {
+        auto sent = ctx->postStreamChunk(ndata);
+        if(sent) {
+          break;
+        }
+      }
+    }
+    ::close(fd);
+    conn->forceClose();
+  }
 }

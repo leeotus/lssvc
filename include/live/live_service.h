@@ -2,6 +2,7 @@
 #define __LIVE_SERVICE_H__
 
 #include "mmedia/base/packet.h"
+#include "mmedia/http/http_handler.h"
 #include "mmedia/rtmp/rtmp_handler.h"
 #include "network/net/lssvc_connection.h"
 #include "network/net/lssvc_eventloop_threadpool.h"
@@ -23,7 +24,7 @@ namespace lssvc::live {
 class LiveSession;
 using SessionPtr = std::shared_ptr<LiveSession>;
 
-class LiveService : public mmedia::RtmpHandler {
+class LiveService : public mmedia::RtmpHandler, public mmedia::HttpHandler {
 public:
   LiveService() = default;
   ~LiveService() = default;
@@ -48,6 +49,12 @@ public:
                  const std::string &param) override;
   void onRecv(const network::TcpConnectionPtr &conn, mmedia::PacketPtr &&data) override;
   void onRecv(const network::TcpConnectionPtr &conn, const mmedia::PacketPtr &data) override;
+
+  // HTTP
+  void onSend(const network::TcpConnectionPtr &conn) override;
+  bool onSendNextChunk(const network::TcpConnectionPtr &conn) override;
+  void onRequest(const network::TcpConnectionPtr &conn, const mmedia::HttpRequestPtr &req,
+                 const mmedia::PacketPtr &packet) override;
 
   // @brief start this service
   void start();
