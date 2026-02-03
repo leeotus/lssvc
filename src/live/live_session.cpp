@@ -1,5 +1,6 @@
 #include "live/live_session.h"
 #include "live/base/live_logger.h"
+#include "live/httpflv_player_user.h"
 #include "live/live_stream.h"
 #include "live/rtmp_playeruser.h"
 #include "utils/lssvc_appinfo.h"
@@ -91,6 +92,11 @@ LiveUserPtr LiveSession::createPlayerUser(const network::ConnectionPtr &conn,
   PlayerUserPtr user;
   if(type == UserType::kUserTypePlayerRtmp) {
     user = std::make_shared<RtmpPlayerUser>(conn, stream_, shared_from_this());
+  } else if (type == UserType::kUserTypePlayerFlv) {
+    user =
+        std::make_shared<HttpFlvPlayerUser>(conn, stream_, shared_from_this());
+  } else {
+    return user_null;
   }
   user->setAppInfo(app_info_);
   user->setDomainName(list[0]);

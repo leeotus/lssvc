@@ -258,3 +258,17 @@ bool HttpRequest::isChunked() const { return is_chunked_; }
 void HttpRequest::setIsStream(bool s) { is_stream_ = s; }
 
 void HttpRequest::setIsChunked(bool c) { is_chunked_ = c; }
+
+HttpRequestPtr HttpRequest::newHttp400Response() {
+  auto res = std::make_shared<HttpRequest>(false);
+  res->setStatusCode(400);
+  res->addHeader("User-Agent", "lssvc");
+  return res;
+}
+
+HttpRequestPtr HttpRequest::newHttp404Response() {
+  auto res = std::make_shared<HttpRequest>(false);
+  res->setStatusCode(404);
+  res->addHeader("User-Agent", "lssvc");
+  return res;
+}

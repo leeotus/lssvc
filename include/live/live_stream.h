@@ -45,6 +45,8 @@ public:
 
   // @brief check whether there is video/audio/meta data
   bool hasMedia() const;
+  bool hasVideo() const;
+  bool hasAudio() const;
 
   bool ready() const;
 

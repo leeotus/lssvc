@@ -61,7 +61,7 @@ void FlvContext::sendFlvHttpHeader(bool has_video, bool has_audio) {
                                                   http_header_.size());
   bufs_.emplace_back(std::move(header_node));
   writeFlvHeader(has_video, has_audio);
-  send();
+  this->send();
 }
 
 void FlvContext::writeFlvHeader(bool has_video, bool has_audio) {
@@ -106,37 +106,30 @@ char FlvContext::getRtmpPacketType(PacketPtr &pkt) {
 bool FlvContext::buildFlvFrame(PacketPtr &pkt, uint32_t timestamp) {
   out_packets_.emplace_back(pkt);
   char *header = current_;
-
-  // previous tag size
   char *p = (char *)&previous_size_;
   *current_++ = p[3];
   *current_++ = p[2];
   *current_++ = p[1];
   *current_++ = p[0];
 
-  // tag type
   *current_++ = getRtmpPacketType(pkt);
 
-  // data size
   auto mlen = pkt->getPacketSize();
   p = (char *)&mlen;
   *current_++ = p[2];
   *current_++ = p[1];
   *current_++ = p[0];
 
-  // timestamp
   p = (char *)&timestamp;
   *current_++ = p[2];
   *current_++ = p[1];
   *current_++ = p[0];
   *current_++ = 0;
 
-  // stream id, default 0
   *current_++ = 0;
   *current_++ = 0;
   *current_++ = 0;
 
-  // update previous_size
   previous_size_ = mlen + 11;
 
   auto h = std::make_shared<BufferNode>(header, current_ - header);
@@ -150,7 +143,9 @@ bool FlvContext::buildFlvFrame(PacketPtr &pkt, uint32_t timestamp) {
 void FlvContext::writeComplete(const network::TcpConnectionPtr &conn) {
   sending_ = false;
   current_ = out_buffer_;
+  bufs_.clear();
   out_packets_.clear();
+
   if (handler_) {
     handler_->onActive(conn);
   }

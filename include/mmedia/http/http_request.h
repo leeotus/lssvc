@@ -10,6 +10,9 @@
 
 namespace lssvc::mmedia {
 
+class HttpRequest;
+using HttpRequestPtr = std::shared_ptr<HttpRequest>;
+
 class HttpRequest {
 public:
   explicit HttpRequest(bool is_request = true);
@@ -82,6 +85,9 @@ public:
 
   void setIsStream(bool s);
   void setIsChunked(bool c);
+
+  static HttpRequestPtr newHttp400Response();
+  static HttpRequestPtr newHttp404Response();
 private:
   // @brief generate and append http requests' first line
   void appendRequestFirstLine(std::stringstream &ss);

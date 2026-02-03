@@ -41,6 +41,14 @@ bool LiveStream::hasMedia() const {
   return has_audio_ || has_video_ || has_meta_;
 }
 
+bool LiveStream::hasVideo() const {
+  return has_video_;
+}
+
+bool LiveStream::hasAudio() const {
+  return has_audio_;
+}
+
 bool LiveStream::ready() const {
   return ready_;
 }

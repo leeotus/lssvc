@@ -25,8 +25,6 @@ enum HttpParserState {
   kExpectError,
 };
 
-using HttpRequestPtr = std::shared_ptr<HttpRequest>;
-
 class HttpParser {
 public:
   HttpParser() = default;

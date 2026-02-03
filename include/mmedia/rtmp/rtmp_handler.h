@@ -6,7 +6,7 @@
 
 namespace lssvc::mmedia {
 
-class RtmpHandler : public MMediaHandler {
+class RtmpHandler : virtual public MMediaHandler {
 public:
   virtual bool onPlay(const network::TcpConnectionPtr &conn,
                       const std::string &session_name,

@@ -2,6 +2,7 @@
 #include "live/base/live_logger.h"
 #include "live/live_session.h"
 #include "live/live_stream.h"
+#include "mmedia/flv/flv_context.h"
 #include "mmedia/http/http_context.h"
 #include "mmedia/http/http_request.h"
 #include "mmedia/http/http_server.h"
@@ -10,6 +11,7 @@
 #include "mmedia/rtmp/rtmp_server.h"
 #include "network/base/lssvc_inetaddress.h"
 #include "utils/lssvc_config.h"
+#include "utils/lssvc_fileutils.h"
 #include "utils/lssvc_string.h"
 #include "utils/lssvc_task.h"
 #include "utils/lssvc_time.h"
@@ -100,8 +102,7 @@ void LiveService::onTimer(const utils::LSSTaskPtr &t) {
 
 void LiveService::onNewConnection(const TcpConnectionPtr &conn) {}
 
-void LiveService::onConnectionDestroy(
-    const TcpConnectionPtr &conn) {
+void LiveService::onConnectionDestroy(const TcpConnectionPtr &conn) {
   auto user = conn->getContext<LiveUser>(kUserContext);
   if(user) {
     user->getSession()->closeUser(user);
@@ -244,47 +245,61 @@ void LiveService::onRequest(const TcpConnectionPtr &conn,
   }
 
   if(req->isRequest()) {
-    // RESEARCH: DEBUG: open a specified file
-    int fd = ::open("../test.flv", O_RDONLY, 0644);
-    if(fd < 0) {
-      LIVE_ERROR << "open file failed: " << strerror(errno);
-      conn->forceClose();
-      return;
-    }
-    HttpRequestPtr res = std::make_shared<HttpRequest>(false);
-    res->setStatusCode(200); // success
-    res->addHeader("server", "lssvc");
-    res->addHeader("content-type", "video/x-flv");
-
-    /* RESEARCH: DEBUG: for simple http request
-    res->setStatusCode(200);
-    res->addHeader("server", "lssvc");
-    res->addHeader("content-type", "text/json");
-    res->addHeader("content-length", std::to_string(strlen("{\"hello world\"}")));
-    res->setBody("{\"{hello world}\"}");
-    */
-
-    auto ctx = conn->getContext<HttpContext>(kHttpContext);
-    if(ctx) {
-      res->setIsStream(true);
-      ctx->postRequest(res);
-    }
-
-    while(true) {
-      PacketPtr ndata = Packet::newPacket(65535);
-      auto ret = ::read(fd, ndata->data(), 65535);
-      if(ret <= 0) {
-        break;
+    // http://ip:port/domain/app/stream
+    // http://ip:port/domain/app/stream/filename.flv
+    // @example http://192.168.186.1:8080/live/app/stream1
+    auto list = LSSString::split(req->getPath(), "/");
+    // DEBUG: list.size
+    if (list.size() < 4) {
+      auto ctx = conn->getContext<HttpContext>(kHttpContext);
+      if (ctx) {
+        auto res = HttpRequest::newHttp400Response();
+        ctx->postRequest(res);
+        return;
       }
-      ndata->setPacketSize(ret);
-      while(true) {
-        auto sent = ctx->postStreamChunk(ndata);
-        if(sent) {
-          break;
+    }
+    const std::string &domain = list[1];
+    const std::string &app = list[2];
+    std::string filename = list[3];
+    std::string stream_name;
+    if (list.size() > 4) {
+      filename = list[4];
+      stream_name = list[3];
+    } else {
+      stream_name = LSSFileUtils::getFileName(filename);
+    }
+    std::string ext = LSSFileUtils::getFileExtension(filename);
+    if (ext == "flv") {
+      std::string session_name = domain + "/" + app + "/" + stream_name;
+      LIVE_DEBUG << "flv play session name:" << session_name;
+      auto s = createSession(session_name);
+      if (s) {
+        // TODO: set param (splited by "?")
+        auto user = s->createPlayerUser(conn, session_name, "",
+                                        UserType::kUserTypePlayerFlv);
+        if (user) {
+          conn->setContext(kUserContext, user);
+          auto flv = std::make_shared<FlvContext>(conn, this);
+          conn->setContext(kFlvContext, flv);
+          s->addPlayer(std::dynamic_pointer_cast<PlayerUser>(user));
+        } else {
+          LIVE_ERROR << "can't create user, session_name: " << session_name;
+          auto ctx = conn->getContext<HttpContext>(kHttpContext);
+          if (ctx) {
+            auto res = HttpRequest::newHttp404Response();
+            ctx->postRequest(res);
+            return;
+          }
+        }
+      } else {
+        LIVE_ERROR << "can't create session name: " << session_name;
+        auto ctx = conn->getContext<HttpContext>(kHttpContext);
+        if (ctx) {
+          auto res = HttpRequest::newHttp404Response();
+          ctx->postRequest(res);
+          return;
         }
       }
     }
-    ::close(fd);
-    conn->forceClose();
   }
 }

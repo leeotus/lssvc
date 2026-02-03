@@ -10,7 +10,7 @@ namespace lssvc::mmedia {
 class HttpRequest;
 using HttpRequestPtr = std::shared_ptr<HttpRequest>;
 
-class HttpHandler : public MMediaHandler {
+class HttpHandler : virtual public MMediaHandler {
 public:
   // @brief callback after sending http message to the peer connection
   virtual void onSend(const network::TcpConnectionPtr &conn) = 0;
