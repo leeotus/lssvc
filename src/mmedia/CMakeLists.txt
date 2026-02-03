@@ -30,6 +30,9 @@ file(GLOB MMEDIA_RTMP_AMF_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/rtmp/amf/**.cpp")
 file(GLOB MMEDIA_HTTP_HEADERS "${LSSVC_INCLUDE_PATH}/mmedia/http/**.h")
 file(GLOB MMEDIA_HTTP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/http/**.cpp")
 
+file(GLOB MMEDIA_FLV_HEADERS "${LSSVC_INCLUDE_PATH}/mmedia/flv/**.h")
+file(GLOB MMEDIA_FLV_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/flv/**.cpp")
+
 # openssl
 find_package(OpenSSL REQUIRED)
 
@@ -52,6 +55,10 @@ add_library(
   # http
   ${MMEDIA_HTTP_HEADERS}
   ${MMEDIA_HTTP_SOURCES}
+
+  # flv
+  ${MMEDIA_FLV_HEADERS}
+  ${MMEDIA_FLV_SOURCES}
 )
 
 target_link_libraries(${PROJECT_NAME}-mmedia PRIVATE lssvc::utils lssvc::net OpenSSL::SSL OpenSSL::Crypto)
