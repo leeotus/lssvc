@@ -1,5 +1,6 @@
 #include "mmedia/http/http_server.h"
 #include "mmedia/base/mmedia_logger.h"
+#include "mmedia/flv/flv_context.h"
 #include "mmedia/http/http_context.h"
 #include <memory>
 
@@ -8,6 +9,7 @@ using namespace lssvc::network;
 using namespace lssvc::mmedia;
 
 using HttpContextPtr = std::shared_ptr<HttpContext>;
+using FlvContextPtr = std::shared_ptr<FlvContext>;
 
 HttpServer::HttpServer(network::LSSEventLoop *loop,
                        const network::LSSInetAddress &local,
@@ -61,9 +63,13 @@ void HttpServer::onMessage(const TcpConnectionPtr &conn, LSSMsgBuffer &buf) {
 }
 
 void HttpServer::onWriteComplete(const ConnectionPtr &conn) {
-  HttpContextPtr ctx = conn->getContext<HttpContext>(kHttpContext);
-  if(ctx) {
-    ctx->writeComplete(std::dynamic_pointer_cast<LSSTcpConnection>(conn));
+  HttpContextPtr http_ctx = conn->getContext<HttpContext>(kHttpContext);
+  if (http_ctx) {
+    http_ctx->writeComplete(std::dynamic_pointer_cast<LSSTcpConnection>(conn));
+  }
+  FlvContextPtr flv_ctx = conn->getContext<FlvContext>(kFlvContext);
+  if (flv_ctx) {
+    flv_ctx->writeComplete(std::dynamic_pointer_cast<LSSTcpConnection>(conn));
   }
 }
 
