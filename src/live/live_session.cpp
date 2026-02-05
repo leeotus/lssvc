@@ -40,7 +40,8 @@ bool LiveSession::isTimeout() {
 
   // TODO: current session's out of time rule
   // if(publisher_ && idle > app_info_->stream_idle_time_)
-  if(players_.empty() && idle > app_info_->stream_idle_time_) {
+  if ((players_.empty() && idle > app_info_->stream_idle_time_)) {
+    LIVE_DEBUG << "session timeout, ready to close";
     return true;
   }
   return false;
@@ -153,7 +154,11 @@ void LiveSession::addPlayer(const PlayerUserPtr &user) {
 
   if(!publisher_) {
     // TODO
+    LIVE_DEBUG << "current player has no publishers";
+  } else {
+    LIVE_DEBUG << "current player has corresponding publisher";
   }
+
   user->active();
 }
 

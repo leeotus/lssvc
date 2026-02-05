@@ -51,7 +51,7 @@ public:
   bool flv_support_{false};
   bool hls_support_{false};
   uint32_t content_latency_{3 * 1000};   // ms
-  uint32_t stream_idle_time_{30 * 1000};
+  uint32_t stream_idle_time_{2 * 60 * 60 * 1000}; // 2 hours
   uint32_t stream_timeout_time_{30 * 1000};
 };
 
